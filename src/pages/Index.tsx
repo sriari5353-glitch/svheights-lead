@@ -216,9 +216,9 @@ function ContactsSection() {
   const { leads, deleteLead, updateLead } = useCRM();
   const [selection, setSelection] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
-  const [src, setSrc] = useState<string>("");
-  const [fb, setFb] = useState<string>("");
-  const [st, setSt] = useState<string>("");
+  const [src, setSrc] = useState<LeadSource | undefined>(undefined);
+  const [fb, setFb] = useState<Feedback | undefined>(undefined);
+  const [st, setSt] = useState<LeadStatus | undefined>(undefined);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>(undefined);
@@ -252,28 +252,28 @@ function ContactsSection() {
             <Input className="pl-8" placeholder="Search by name or phone" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="hidden md:flex items-center gap-2 text-muted-foreground"><Filter className="h-4 w-4" /> Filters</div>
-          <Select value={src} onValueChange={setSrc}>
+          <Select value={src} onValueChange={(v) => setSrc(v === "ALL" ? undefined : (v as LeadSource))}>
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="ALL">All</SelectItem>
               {SOURCE_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select value={fb} onValueChange={setFb}>
+          <Select value={fb} onValueChange={(v) => setFb(v === "ALL" ? undefined : (v as Feedback))}>
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="Feedback" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="ALL">All</SelectItem>
               {FEEDBACK_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select value={st} onValueChange={setSt}>
+          <Select value={st} onValueChange={(v) => setSt(v === "ALL" ? undefined : (v as LeadStatus))}>
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="ALL">All</SelectItem>
               {STATUS_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}

@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          name: string
+          notes: string
+          phone: string
+          source: string
+          source_details: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          name: string
+          notes?: string
+          phone: string
+          source: string
+          source_details?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          name?: string
+          notes?: string
+          phone?: string
+          source?: string
+          source_details?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          created_at: string
+          datetime: string
+          id: string
+          lead_id: string
+          message: string
+          notified: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          datetime: string
+          id?: string
+          lead_id: string
+          message: string
+          notified?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          datetime?: string
+          id?: string
+          lead_id?: string
+          message?: string
+          notified?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedules: {
+        Row: {
+          created_at: string
+          datetime: string
+          id: string
+          lead_ids: string[]
+          message: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          datetime: string
+          id?: string
+          lead_ids: string[]
+          message: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          datetime?: string
+          id?: string
+          lead_ids?: string[]
+          message?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_history: {
+        Row: {
+          count: number
+          created_at: string
+          date: string
+          id: string
+          lead_ids: string[]
+          message: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          count: number
+          created_at?: string
+          date: string
+          id?: string
+          lead_ids: string[]
+          message: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          date?: string
+          id?: string
+          lead_ids?: string[]
+          message?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

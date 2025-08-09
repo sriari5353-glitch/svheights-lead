@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import type { Lead, Reminder, ScheduledMessage, WhatsAppHistory, CRMState, CRMAction } from "@/types/crm";
+import { supabase } from "@/integrations/supabase/client";
 
 const STORAGE_KEY = "svh_leadmate_state_v1";
 
@@ -100,6 +101,59 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  // Load from Supabase and subscribe to realtime
+  const loadAll = async () => {
+    const [leadsRes, remindersRes, historyRes, schedulesRes] = await Promise.all([
+      supabase.from("leads").select("*").order("created_at", { ascending: false }),
+      supabase.from("reminders").select("*").order("datetime", { ascending: true }),
+      supabase.from("whatsapp_history").select("*").order("date", { ascending: false }),
+      supabase.from("schedules").select("*").order("datetime", { ascending: true }),
+    ]);
+
+    const mapLead = (r: any): Lead => ({
+      id: r.id,
+      name: r.name,
+      phone: r.phone,
+      source: r.source,
+      sourceDetails: r.source_details ?? "",
+      status: r.status,
+      notes: r.notes ?? "",
+      feedback: r.feedback ?? "",
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    });
+    const mapReminder = (r: any): Reminder => ({ id: r.id, leadId: r.lead_id, datetime: r.datetime, message: r.message, notified: r.notified });
+    const mapHistory = (r: any): WhatsAppHistory => ({ id: r.id, date: r.date, message: r.message, leadIds: r.lead_ids || [], status: r.status, count: r.count });
+    const mapSchedule = (r: any): ScheduledMessage => ({ id: r.id, datetime: r.datetime, message: r.message, leadIds: r.lead_ids || [] });
+
+    dispatch({
+      type: "LOAD",
+      payload: {
+        leads: (leadsRes.data || []).map(mapLead),
+        reminders: (remindersRes.data || []).map(mapReminder),
+        whatsappHistory: (historyRes.data || []).map(mapHistory),
+        schedules: (schedulesRes.data || []).map(mapSchedule),
+      },
+    });
+  };
+
+  useEffect(() => {
+    loadAll().catch(() => void 0);
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("crm-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "reminders" }, () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "whatsapp_history" }, () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "schedules" }, () => loadAll())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Process schedules and reminders with timeouts
   useEffect(() => {
     const now = Date.now();
@@ -110,18 +164,15 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (r.notified) return;
       const due = new Date(r.datetime).getTime();
       const delay = Math.max(0, due - now);
-      const id = window.setTimeout(() => {
+      const id = window.setTimeout(async () => {
         try {
           if (Notification.permission === "granted") {
             new Notification("Reminder due", { body: r.message || "Follow up reminder" });
           }
-        } catch { }
+        } catch {}
         toast({ title: "Reminder due", description: r.message || "Follow up reminder" });
-        // mark notified
-        dispatch({ type: "ADD_REMINDER", payload: { ...r, notified: true, id: r.id } });
-        dispatch({ type: "DELETE_REMINDER", payload: { id: r.id } });
-        // Re-add as notified to keep a history feel (optional)
-        dispatch({ type: "ADD_REMINDER", payload: { ...r, notified: true } });
+        // mark as notified in DB
+        await supabase.from("reminders").update({ notified: true }).eq("id", r.id);
       }, delay);
       timers.push(id);
     });
@@ -130,21 +181,19 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.schedules.forEach((s) => {
       const due = new Date(s.datetime).getTime();
       const delay = Math.max(0, due - now);
-      const id = window.setTimeout(() => {
+      const id = window.setTimeout(async () => {
         // Fire now
         openWhatsAppTabs(s.leadIds, s.message);
-        dispatch({
-          type: "ADD_HISTORY",
-          payload: {
-            id: crypto.randomUUID(),
-            date: new Date().toISOString(),
-            message: s.message,
-            leadIds: s.leadIds,
-            status: "sent",
-            count: s.leadIds.length,
-          },
+        const nowIso = new Date().toISOString();
+        await supabase.from("whatsapp_history").insert({
+          id: crypto.randomUUID(),
+          date: nowIso,
+          message: s.message,
+          lead_ids: s.leadIds,
+          status: "sent",
+          count: s.leadIds.length,
         });
-        dispatch({ type: "REMOVE_SCHEDULE", payload: { id: s.id } });
+        await supabase.from("schedules").delete().eq("id", s.id);
       }, delay);
       timers.push(id);
     });
@@ -173,44 +222,86 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ok: false, error };
       }
       const now = new Date().toISOString();
-      const lead: Lead = { id: crypto.randomUUID(), createdAt: now, updatedAt: now, notes: "", ...payload };
-      dispatch({ type: "ADD_LEAD", payload: lead });
-      toast({ title: "Lead added", description: `${lead.name} (${lead.phone})` });
+      const id = crypto.randomUUID();
+      supabase
+        .from("leads")
+        .insert({
+          id,
+          name: payload.name,
+          phone: payload.phone,
+          source: payload.source,
+          source_details: payload.sourceDetails,
+          status: payload.status,
+          notes: payload.notes,
+          feedback: payload.feedback,
+          created_at: now,
+          updated_at: now,
+        })
+        .then(({ error }) => {
+          if (error) {
+            toast({ title: "Failed to add lead", description: error.message, variant: "destructive" });
+          } else {
+            toast({ title: "Lead added", description: `${payload.name} (${payload.phone})` });
+          }
+        });
       return { ok: true };
     },
     updateLead: (lead) => {
-      dispatch({ type: "UPDATE_LEAD", payload: lead as Lead });
+      const now = new Date().toISOString();
+      const updates: any = {
+        name: lead.name,
+        phone: lead.phone,
+        source: lead.source,
+        source_details: lead.sourceDetails,
+        status: lead.status,
+        notes: lead.notes,
+        feedback: lead.feedback,
+        updated_at: now,
+      };
+      supabase.from("leads").update(updates).eq("id", lead.id);
       toast({ title: "Lead updated" });
     },
     deleteLead: (id) => {
-      dispatch({ type: "DELETE_LEAD", payload: { id } });
+      supabase.from("leads").delete().eq("id", id);
       toast({ title: "Lead deleted" });
     },
+
     addReminder: (payload) => {
-      const reminder: Reminder = { id: crypto.randomUUID(), notified: false, ...payload };
-      dispatch({ type: "ADD_REMINDER", payload: reminder });
+      supabase.from("reminders").insert({
+        id: crypto.randomUUID(),
+        lead_id: payload.leadId,
+        datetime: payload.datetime,
+        message: payload.message,
+        notified: false,
+      });
       toast({ title: "Reminder set", description: "We'll notify you when it's due (while the app is open)." });
     },
-    deleteReminder: (id) => dispatch({ type: "DELETE_REMINDER", payload: { id } }),
+    deleteReminder: (id) => {
+      supabase.from("reminders").delete().eq("id", id);
+    },
+
     sendWhatsAppNow: (leadIds, message) => {
       openWhatsAppTabs(leadIds, message);
-      dispatch({
-        type: "ADD_HISTORY",
-        payload: {
-          id: crypto.randomUUID(),
-          date: new Date().toISOString(),
-          message,
-          leadIds,
-          status: "sent",
-          count: leadIds.length,
-        },
+      supabase.from("whatsapp_history").insert({
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+        message,
+        lead_ids: leadIds,
+        status: "sent",
+        count: leadIds.length,
       });
     },
+
     scheduleWhatsApp: (p) => {
-      const sched: ScheduledMessage = { id: crypto.randomUUID(), ...p };
-      dispatch({ type: "ADD_SCHEDULE", payload: sched });
+      supabase.from("schedules").insert({
+        id: crypto.randomUUID(),
+        datetime: p.datetime,
+        message: p.message,
+        lead_ids: p.leadIds,
+      });
       toast({ title: "Scheduled", description: "Your WhatsApp message is scheduled." });
     },
+
     getCounts: () => {
       const total = state.leads.length;
       const feedback = (f: string) => state.leads.filter((l) => (l.feedback || "").toLowerCase() === f).length;

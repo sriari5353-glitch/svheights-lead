@@ -9,6 +9,7 @@ import AuthPage from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import AdminPage from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/forgot" element={<ForgotPassword />} />
             <Route path="/auth/reset" element={<ResetPassword />} />
+            <Route path="/admin" element={<ProtectedRoute element={<AdminPage />} />} />
             <Route path="/" element={<ProtectedRoute element={<Index />} />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

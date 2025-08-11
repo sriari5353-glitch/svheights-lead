@@ -49,6 +49,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .select("role")
             .eq("user_id", s.user.id);
           setIsAdmin(Boolean(data?.some((r) => r.role === "admin")));
+
+          // Enforce deactivated accounts cannot access the app
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_active")
+            .eq("id", s.user.id)
+            .maybeSingle();
+          if (profile && profile.is_active === false) {
+            try { await supabase.auth.signOut({ scope: "global" as any }); } catch (_) {}
+            cleanupAuthState();
+            setUser(null);
+            setSession(null);
+            setIsAdmin(false);
+          }
         }, 0);
       } else {
         setIsAdmin(false);

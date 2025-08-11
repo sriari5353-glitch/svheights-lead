@@ -13,7 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -496,6 +497,15 @@ function RemindersSection() {
   );
 }
 
+function LogoutButton() {
+  const { signOut } = useAuth();
+  return (
+    <Button variant="outline" onClick={signOut} className="text-primary-foreground border-primary-foreground/40 hover:bg-white/10">
+      <LogOut className="h-4 w-4 mr-1" /> Logout
+    </Button>
+  );
+}
+
 function Page() {
   useSEO();
   const [open, setOpen] = useState(false);
@@ -508,12 +518,15 @@ function Page() {
               <h1 className="text-2xl md:text-3xl font-semibold">SV Heights LeadMate CRM</h1>
               <p className="text-primary-foreground/90 mt-1">Track leads, follow-ups, and WhatsApp campaigns with ease.</p>
             </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button variant="hero"><Plus className="h-4 w-4" /> Add Lead</Button>
-              </DialogTrigger>
-              <LeadForm open={open} setOpen={setOpen} />
-            </Dialog>
+            <div className="flex items-center gap-2">
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="hero"><Plus className="h-4 w-4" /> Add Lead</Button>
+                </DialogTrigger>
+                <LeadForm open={open} setOpen={setOpen} />
+              </Dialog>
+              <LogoutButton />
+            </div>
           </div>
         </div>
       </header>

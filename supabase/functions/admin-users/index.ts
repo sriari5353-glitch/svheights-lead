@@ -2,23 +2,33 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "https://xdbpsekyyifjrvarqwqj.supabase.co";
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 // Public anon key (safe to embed)
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkYnBzZWt5eWlmanJ2YXJxd3FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MTY5MDYsImV4cCI6MjA3MDI5MjkwNn0.6fPkXgZ5QxsIRP5PAryye8YocF9LTP9OgTd_UAp1qqM";
 
 function json(body: any, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...corsHeaders },
     ...init,
   });
 }
 
 serve(async (req) => {
+  // CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.get("Authorization") || "";
     const supabaseUserClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader || "" } },
+      global: { headers: { Authorization: authHeader } },
     });
 
     const { data: userRes } = await supabaseUserClient.auth.getUser();
@@ -33,6 +43,10 @@ serve(async (req) => {
     if (rolesErr) return json({ error: rolesErr.message }, { status: 500 });
     const isAdmin = Boolean(roles?.some((r: any) => r.role === "admin"));
     if (!isAdmin) return json({ error: "Forbidden" }, { status: 403 });
+
+    if (!SERVICE_ROLE_KEY) {
+      return json({ error: "Service role key not configured" }, { status: 500 });
+    }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 

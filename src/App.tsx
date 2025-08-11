@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import AdminPage from "./pages/Admin";
+import AppHeader from "./components/AppHeader";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
+          <AppHeader />
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/forgot" element={<ForgotPassword />} />

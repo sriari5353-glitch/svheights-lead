@@ -107,41 +107,54 @@ function getFeedbackBadge(feedback?: Feedback) {
 }
 
 function CalendarNotesCard() {
+  const LS_KEY = "svh_day_diary_v1";
   const [date, setDate] = useState<Date>(new Date());
-  const [text, setText] = useState<string>("");
-  const [notes, setNotes] = useState<Record<string, string[]>>(() => {
+  const [diary, setDiary] = useState<Record<string, { text: string; updatedAt?: string }>>(() => {
     try {
-      return JSON.parse(localStorage.getItem("svh_day_notes_v1") || "{}");
+      const raw = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+      const out: Record<string, { text: string; updatedAt?: string }> = {};
+      for (const k in raw) {
+        const v = (raw as any)[k];
+        if (Array.isArray(v)) out[k] = { text: v.join("\n") };
+        else if (v && typeof v === "object" && "text" in v) out[k] = v as { text: string; updatedAt?: string };
+        else out[k] = { text: String(v ?? "") };
+      }
+      return out;
     } catch {
       return {};
     }
   });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("svh_day_notes_v1", JSON.stringify(notes));
-    } catch {}
-  }, [notes]);
-
   const key = format(date, "yyyy-MM-dd");
-  const addNote = () => {
-    const t = text.trim();
-    if (!t) return;
-    setNotes((n) => ({ ...n, [key]: [...(n[key] || []), t] }));
-    setText("");
-  };
-  const removeNote = (idx: number) => {
-    setNotes((n) => {
-      const arr = [...(n[key] || [])];
-      arr.splice(idx, 1);
-      return { ...n, [key]: arr };
-    });
-  };
+  const [text, setText] = useState<string>(diary[key]?.text || "");
+  const [saving, setSaving] = useState<boolean>(false);
+
+  // Persist entire diary when changed
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(diary)); } catch {}
+  }, [diary]);
+
+  // Load entry when date changes or diary updates
+  useEffect(() => {
+    setText(diary[key]?.text || "");
+  }, [key, diary]);
+
+  // Debounced autosave
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setSaving(true);
+      setDiary((d) => ({ ...d, [key]: { text, updatedAt: new Date().toISOString() } }));
+      setSaving(false);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [text, key]);
+
+  const clear = () => setText("");
+  const lastSaved = diary[key]?.updatedAt ? format(new Date(diary[key]!.updatedAt!), "p") : undefined;
 
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Calendar Notes</CardTitle>
+        <CardTitle className="text-sm font-medium">Diary</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         <div className="flex items-center gap-2">
@@ -162,31 +175,17 @@ function CalendarNotesCard() {
               />
             </PopoverContent>
           </Popover>
-          <Badge variant="info">Tasks: {(notes[key]?.length || 0)}</Badge>
+          <Badge variant={saving ? "warning" : "info"}>{saving ? "Saving..." : lastSaved ? `Saved ${lastSaved}` : "Not saved"}</Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Add task..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addNote();
-            }}
-          />
-          <Button variant="hero" onClick={addNote}>Add</Button>
-        </div>
-        <div className="max-h-24 overflow-auto space-y-1">
-          {(notes[key] || []).map((n, i) => (
-            <div key={i} className="flex items-center justify-between rounded-md border px-2 py-1 text-sm">
-              <span className="truncate pr-2">{n}</span>
-              <Button variant="ghost" size="sm" onClick={() => removeNote(i)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          {(!notes[key] || notes[key].length === 0) && (
-            <p className="text-xs text-muted-foreground">No tasks yet.</p>
-          )}
+        <Textarea
+          rows={6}
+          placeholder="Write today’s updates, meetings, follow-ups, ideas..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{text.length} chars</span>
+          <Button size="sm" variant="outline" onClick={clear}>Clear</Button>
         </div>
       </CardContent>
     </Card>

@@ -45,20 +45,27 @@ function useSEO() {
   }, []);
 }
 
-function Metrics() {
+function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL") => void }) {
   const { getCounts } = useCRM();
   const counts = getCounts();
   const items = [
-    { title: "Total Leads", value: counts.total, icon: Users },
-    { title: "Prospects", value: counts.prospect, icon: Users },
-    { title: "Follow-up", value: counts.followup, icon: CalendarDays },
-    { title: "Visited", value: counts.visited, icon: CalendarDays },
-    { title: "Rejected", value: counts.rejected, icon: Trash2 },
+    { id: "ALL" as const, title: "Total Leads", value: counts.total, icon: Users },
+    { id: "Prospect" as const, title: "Prospects", value: counts.prospect, icon: Users },
+    { id: "Follow-up" as const, title: "Follow-up", value: counts.followup, icon: CalendarDays },
+    { id: "Visited" as const, title: "Visited", value: counts.visited, icon: CalendarDays },
+    { id: "Rejected" as const, title: "Rejected", value: counts.rejected, icon: Trash2 },
   ];
   return (
     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {items.map((m) => (
-        <Card key={m.title} className="shadow-sm">
+        <Card
+          key={m.title}
+          className="shadow-sm cursor-pointer hover:shadow-md transition"
+          role="button"
+          tabIndex={0}
+          onClick={() => onOpenContacts(m.id)}
+          onKeyDown={(e) => { if (e.key === "Enter") onOpenContacts(m.id); }}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{m.title}</CardTitle>
             <m.icon className="h-4 w-4 text-muted-foreground" />
@@ -213,7 +220,7 @@ function LeadForm({ open, setOpen, edit }: { open: boolean; setOpen: (v: boolean
   );
 }
 
-function ContactsSection() {
+function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL" }) {
   const { leads, deleteLead, updateLead } = useCRM();
   const [selection, setSelection] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
@@ -223,6 +230,12 @@ function ContactsSection() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>(undefined);
+
+  useEffect(() => {
+    if (activeFeedback !== undefined) {
+      setFb(activeFeedback === "ALL" ? undefined : (activeFeedback as Feedback));
+    }
+  }, [activeFeedback]);
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
@@ -509,6 +522,8 @@ function LogoutButton() {
 function Page() {
   useSEO();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<string>("contacts");
+  const [activeFeedback, setActiveFeedback] = useState<Feedback | "ALL" | undefined>(undefined);
   return (
     <div className="min-h-screen">
       <header className="relative mb-6 overflow-hidden rounded-xl border bg-[linear-gradient(120deg,_hsl(var(--primary))_0%,_hsl(var(--accent))_100%)] text-primary-foreground">
@@ -532,9 +547,9 @@ function Page() {
       </header>
 
       <main className="space-y-6">
-        <Metrics />
+        <Metrics onOpenContacts={(filter) => { setActiveFeedback(filter); setTab("contacts"); }} />
 
-        <Tabs defaultValue="contacts" className="mt-2">
+        <Tabs value={tab} onValueChange={setTab} className="mt-2">
           <TabsList>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="reminders">Reminders</TabsTrigger>
@@ -542,7 +557,7 @@ function Page() {
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
-            <ContactsSection />
+            <ContactsSection activeFeedback={activeFeedback} />
           </TabsContent>
 
           <TabsContent value="reminders" className="space-y-4">

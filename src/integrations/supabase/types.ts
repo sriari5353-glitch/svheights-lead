@@ -17,6 +17,7 @@ export type Database = {
       leads: {
         Row: {
           created_at: string
+          created_by: string | null
           feedback: string
           id: string
           name: string
@@ -29,6 +30,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           feedback?: string
           id?: string
           name: string
@@ -41,6 +43,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           feedback?: string
           id?: string
           name?: string
@@ -86,6 +89,7 @@ export type Database = {
       reminders: {
         Row: {
           created_at: string
+          created_by: string | null
           datetime: string
           id: string
           lead_id: string
@@ -95,6 +99,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           datetime: string
           id?: string
           lead_id: string
@@ -104,6 +109,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           datetime?: string
           id?: string
           lead_id?: string
@@ -124,6 +130,7 @@ export type Database = {
       schedules: {
         Row: {
           created_at: string
+          created_by: string | null
           datetime: string
           id: string
           lead_ids: string[]
@@ -132,6 +139,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           datetime: string
           id?: string
           lead_ids: string[]
@@ -140,6 +148,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           datetime?: string
           id?: string
           lead_ids?: string[]
@@ -173,6 +182,7 @@ export type Database = {
         Row: {
           count: number
           created_at: string
+          created_by: string | null
           date: string
           id: string
           lead_ids: string[]
@@ -183,6 +193,7 @@ export type Database = {
         Insert: {
           count: number
           created_at?: string
+          created_by?: string | null
           date: string
           id?: string
           lead_ids: string[]
@@ -193,6 +204,7 @@ export type Database = {
         Update: {
           count?: number
           created_at?: string
+          created_by?: string | null
           date?: string
           id?: string
           lead_ids?: string[]

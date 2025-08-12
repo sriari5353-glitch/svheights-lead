@@ -80,12 +80,6 @@ function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL"
         ))}
       </div>
       
-      {/* Diary Card */}
-      <div className="flex justify-center">
-        <div className="w-full max-w-md">
-          <CalendarNotesCard />
-        </div>
-      </div>
     </section>
   );
 }
@@ -651,6 +645,7 @@ function Page() {
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="reminders">Reminders</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            <TabsTrigger value="diary">Diary</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
@@ -663,6 +658,14 @@ function Page() {
 
           <TabsContent value="whatsapp" className="space-y-4">
             <BulkWhatsApp selectedIds={[]} clearSelection={() => {}} />
+          </TabsContent>
+
+          <TabsContent value="diary" className="space-y-4">
+            <div className="flex justify-center">
+              <div className="w-full max-w-md">
+                <CalendarNotesCard />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

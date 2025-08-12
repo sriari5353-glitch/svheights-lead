@@ -268,12 +268,30 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         feedback: lead.feedback,
         updated_at: now,
       };
-      supabase.from("leads").update(updates).eq("id", lead.id);
-      toast({ title: "Lead updated" });
+      supabase
+        .from("leads")
+        .update(updates)
+        .eq("id", lead.id)
+        .then(({ error }) => {
+          if (error) {
+            toast({ title: "Update failed", description: error.message, variant: "destructive" });
+          } else {
+            toast({ title: "Lead updated" });
+          }
+        });
     },
     deleteLead: (id) => {
-      supabase.from("leads").delete().eq("id", id);
-      toast({ title: "Lead deleted" });
+      supabase
+        .from("leads")
+        .delete()
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) {
+            toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+          } else {
+            toast({ title: "Lead deleted" });
+          }
+        });
     },
 
     addReminder: (payload) => {

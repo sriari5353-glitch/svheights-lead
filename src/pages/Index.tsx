@@ -51,34 +51,41 @@ function useSEO() {
 function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL") => void }) {
   const { getCounts } = useCRM();
   const counts = getCounts();
-  const items = [
-    { id: "ALL" as const, title: "Total Leads", value: counts.total, icon: Users },
-    { id: "Prospect" as const, title: "Prospects", value: counts.prospect, icon: Users },
-    { id: "Follow-up" as const, title: "Follow-up", value: counts.followup, icon: CalendarDays },
-    { id: "Visited" as const, title: "Visited", value: counts.visited, icon: CalendarDays },
-    { id: "Rejected" as const, title: "Rejected", value: counts.rejected, icon: Trash2 },
+  const metrics = [
+    { id: "ALL" as const, title: "Total Leads", value: counts.total, color: "bg-primary text-primary-foreground" },
+    { id: "Prospect" as const, title: "Prospects", value: counts.prospect, color: "bg-accent text-accent-foreground" },
+    { id: "Follow-up" as const, title: "Follow-up", value: counts.followup, color: "bg-warning text-warning-foreground" },
+    { id: "Visited" as const, title: "Visited", value: counts.visited, color: "bg-success text-success-foreground" },
+    { id: "Rejected" as const, title: "Rejected", value: counts.rejected, color: "bg-destructive text-destructive-foreground" },
   ];
+
   return (
-    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-      {items.map((m) => (
-        <Card
-          key={m.title}
-          className="shadow-sm cursor-pointer hover:shadow-md transition"
-          role="button"
-          tabIndex={0}
-          onClick={() => onOpenContacts(m.id)}
-          onKeyDown={(e) => { if (e.key === "Enter") onOpenContacts(m.id); }}
-        >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{m.title}</CardTitle>
-            <m.icon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{m.value}</div>
-          </CardContent>
-        </Card>
-      ))}
-      <CalendarNotesCard />
+    <section className="space-y-6">
+      {/* Circular Metrics */}
+      <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8">
+        {metrics.map((metric) => (
+          <div
+            key={metric.title}
+            className="flex flex-col items-center cursor-pointer group"
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenContacts(metric.id)}
+            onKeyDown={(e) => { if (e.key === "Enter") onOpenContacts(metric.id); }}
+          >
+            <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full ${metric.color} flex items-center justify-center shadow-lg transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl`}>
+              <span className="text-lg md:text-2xl font-bold">{metric.value}</span>
+            </div>
+            <span className="text-xs md:text-sm text-muted-foreground mt-2 text-center font-medium">{metric.title}</span>
+          </div>
+        ))}
+      </div>
+      
+      {/* Diary Card */}
+      <div className="flex justify-center">
+        <div className="w-full max-w-md">
+          <CalendarNotesCard />
+        </div>
+      </div>
     </section>
   );
 }

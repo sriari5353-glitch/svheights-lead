@@ -73,26 +73,26 @@ function Metrics() {
 }
 
 function getStatusBadge(status: LeadStatus) {
-  const map: Record<LeadStatus, string> = {
-    "New Lead": "bg-secondary text-secondary-foreground",
-    Prospect: "bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))]",
-    Negotiation: "bg-muted",
-    "Hot Lead": "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]",
-    Closed: "bg-primary text-primary-foreground",
-    Lost: "bg-destructive text-destructive-foreground",
+  const map: Record<LeadStatus, any> = {
+    "New Lead": "info",
+    Prospect: "accent",
+    Negotiation: "warning",
+    "Hot Lead": "default",
+    Closed: "success",
+    Lost: "destructive",
   };
-  return <Badge className={map[status]}>{status}</Badge>;
+  return <Badge variant={map[status]}>{status}</Badge>;
 }
 
 function getFeedbackBadge(feedback?: Feedback) {
   if (!feedback) return null;
-  const map: Record<string, string> = {
-    Prospect: "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]",
-    "Follow-up": "bg-[hsl(var(--accent))]/15 text-[hsl(var(--accent))]",
-    Visited: "bg-muted text-foreground/80",
-    Rejected: "bg-destructive/15 text-destructive",
+  const map: Record<string, any> = {
+    Prospect: "accent",
+    "Follow-up": "warning",
+    Visited: "success",
+    Rejected: "destructive",
   };
-  return <Badge className={map[feedback] || "bg-muted"}>{feedback}</Badge>;
+  return <Badge variant={map[feedback]}>{feedback}</Badge>;
 }
 
 const defaultLead: Omit<Lead, "id" | "createdAt" | "updatedAt"> = {

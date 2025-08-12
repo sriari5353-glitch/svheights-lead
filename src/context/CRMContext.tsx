@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import { toast } from "@/hooks/use-toast";
 import type { Lead, Reminder, ScheduledMessage, WhatsAppHistory, CRMState, CRMAction } from "@/types/crm";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const STORAGE_KEY = "svh_leadmate_state_v1";
 
@@ -92,6 +93,7 @@ function usePersistentReducer() {
 
 export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = usePersistentReducer();
+  const { user } = useAuth();
 
   // Notifications for upcoming reminders
   useEffect(() => {
@@ -185,6 +187,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Fire now
         openWhatsAppTabs(s.leadIds, s.message);
         const nowIso = new Date().toISOString();
+        if (!user?.id) return;
         await supabase.from("whatsapp_history").insert({
           id: crypto.randomUUID(),
           date: nowIso,
@@ -192,6 +195,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           lead_ids: s.leadIds,
           status: "sent",
           count: s.leadIds.length,
+          created_by: user.id,
         });
         await supabase.from("schedules").delete().eq("id", s.id);
       }, delay);
@@ -221,6 +225,11 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toast({ title: "Duplicate phone", description: error, variant: "destructive" });
         return { ok: false, error };
       }
+      if (!user?.id) {
+        const error = "Not authenticated";
+        toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
+        return { ok: false, error };
+      }
       const now = new Date().toISOString();
       const id = crypto.randomUUID();
       supabase
@@ -236,6 +245,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           feedback: payload.feedback,
           created_at: now,
           updated_at: now,
+          created_by: user.id,
         })
         .then(({ error }) => {
           if (error) {
@@ -267,12 +277,17 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     },
 
     addReminder: (payload) => {
+      if (!user?.id) {
+        toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
+        return;
+      }
       supabase.from("reminders").insert({
         id: crypto.randomUUID(),
         lead_id: payload.leadId,
         datetime: payload.datetime,
         message: payload.message,
         notified: false,
+        created_by: user.id,
       });
       toast({ title: "Reminder set", description: "We'll notify you when it's due (while the app is open)." });
     },
@@ -282,6 +297,10 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     sendWhatsAppNow: (leadIds, message) => {
       openWhatsAppTabs(leadIds, message);
+      if (!user?.id) {
+        toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
+        return;
+      }
       supabase.from("whatsapp_history").insert({
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
@@ -289,15 +308,21 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lead_ids: leadIds,
         status: "sent",
         count: leadIds.length,
+        created_by: user.id,
       });
     },
 
     scheduleWhatsApp: (p) => {
+      if (!user?.id) {
+        toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
+        return;
+      }
       supabase.from("schedules").insert({
         id: crypto.randomUUID(),
         datetime: p.datetime,
         message: p.message,
         lead_ids: p.leadIds,
+        created_by: user.id,
       });
       toast({ title: "Scheduled", description: "Your WhatsApp message is scheduled." });
     },
@@ -313,7 +338,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         rejected: feedback("rejected"),
       };
     },
-  }), [state]);
+  }), [state, user?.id]);
 
   return <CRMContext.Provider value={value}>{children}</CRMContext.Provider>;
 };

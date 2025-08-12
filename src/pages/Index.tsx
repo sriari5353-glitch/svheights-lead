@@ -15,6 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -56,7 +59,7 @@ function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL"
     { id: "Rejected" as const, title: "Rejected", value: counts.rejected, icon: Trash2 },
   ];
   return (
-    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
       {items.map((m) => (
         <Card
           key={m.title}
@@ -75,6 +78,7 @@ function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL"
           </CardContent>
         </Card>
       ))}
+      <CalendarNotesCard />
     </section>
   );
 }
@@ -100,6 +104,93 @@ function getFeedbackBadge(feedback?: Feedback) {
     Rejected: "destructive",
   };
   return <Badge variant={map[feedback]}>{feedback}</Badge>;
+}
+
+function CalendarNotesCard() {
+  const [date, setDate] = useState<Date>(new Date());
+  const [text, setText] = useState<string>("");
+  const [notes, setNotes] = useState<Record<string, string[]>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("svh_day_notes_v1") || "{}");
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("svh_day_notes_v1", JSON.stringify(notes));
+    } catch {}
+  }, [notes]);
+
+  const key = format(date, "yyyy-MM-dd");
+  const addNote = () => {
+    const t = text.trim();
+    if (!t) return;
+    setNotes((n) => ({ ...n, [key]: [...(n[key] || []), t] }));
+    setText("");
+  };
+  const removeNote = (idx: number) => {
+    setNotes((n) => {
+      const arr = [...(n[key] || [])];
+      arr.splice(idx, 1);
+      return { ...n, [key]: arr };
+    });
+  };
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Calendar Notes</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="justify-start">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                {format(date, "LLL d")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={(d) => d && setDate(d)}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <Badge variant="info">Tasks: {(notes[key]?.length || 0)}</Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Add task..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addNote();
+            }}
+          />
+          <Button variant="hero" onClick={addNote}>Add</Button>
+        </div>
+        <div className="max-h-24 overflow-auto space-y-1">
+          {(notes[key] || []).map((n, i) => (
+            <div key={i} className="flex items-center justify-between rounded-md border px-2 py-1 text-sm">
+              <span className="truncate pr-2">{n}</span>
+              <Button variant="ghost" size="sm" onClick={() => removeNote(i)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          {(!notes[key] || notes[key].length === 0) && (
+            <p className="text-xs text-muted-foreground">No tasks yet.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 const defaultLead: Omit<Lead, "id" | "createdAt" | "updatedAt"> = {

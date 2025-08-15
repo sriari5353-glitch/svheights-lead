@@ -57,7 +57,12 @@ export default function TaskManager() {
         variant: "destructive",
       });
     } else {
-      setTasks(data || []);
+      // Type cast the status field to ensure it matches our Task interface
+      const typedTasks = (data || []).map(task => ({
+        ...task,
+        status: task.status as 'todo' | 'done'
+      }));
+      setTasks(typedTasks);
     }
     setLoading(false);
   }

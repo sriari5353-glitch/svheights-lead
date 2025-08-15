@@ -49,7 +49,7 @@ interface CRMContextValue extends CRMState {
   updateLead: (lead: Partial<Lead> & { id: string }) => void;
   deleteLead: (id: string) => void;
 
-  addReminder: (reminder: Omit<Reminder, "id" | "notified">) => void;
+  addReminder: (reminder: Omit<Reminder, "id" | "notified">) => Promise<{ ok: boolean; error?: string }>;
   deleteReminder: (id: string) => void;
 
   sendWhatsAppNow: (leadIds: string[], message: string) => void;
@@ -308,23 +308,68 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
     },
 
-    addReminder: (payload) => {
+    addReminder: async (payload) => {
       if (!user?.id) {
+        const error = "Not authenticated";
         toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
-        return;
+        return { ok: false, error };
       }
-      supabase.from("reminders").insert({
-        id: crypto.randomUUID(),
-        lead_id: payload.leadId,
-        datetime: payload.datetime,
-        message: payload.message,
-        notified: false,
-        created_by: user.id,
-      });
-      toast({ title: "Reminder set", description: "We'll notify you when it's due (while the app is open)." });
+
+      try {
+        const id = crypto.randomUUID();
+        const { error } = await supabase.from("reminders").insert({
+          id,
+          lead_id: payload.leadId,
+          datetime: payload.datetime,
+          message: payload.message,
+          notified: false,
+          created_by: user.id,
+        });
+
+        if (error) {
+          console.error("Failed to save reminder:", error);
+          toast({ 
+            title: "Failed to save reminder", 
+            description: error.message, 
+            variant: "destructive" 
+          });
+          return { ok: false, error: error.message };
+        }
+
+        // Add to local state immediately for optimistic updates
+        const newReminder: Reminder = {
+          id,
+          leadId: payload.leadId,
+          datetime: payload.datetime,
+          message: payload.message,
+          notified: false,
+        };
+        dispatch({ type: "ADD_REMINDER", payload: newReminder });
+
+        toast({ 
+          title: "Reminder saved", 
+          description: "Your reminder has been saved successfully and will sync across all devices." 
+        });
+        
+        return { ok: true };
+      } catch (error) {
+        console.error("Unexpected error saving reminder:", error);
+        toast({ 
+          title: "Failed to save reminder", 
+          description: "An unexpected error occurred. Please try again.", 
+          variant: "destructive" 
+        });
+        return { ok: false, error: "Unexpected error occurred" };
+      }
     },
     deleteReminder: (id) => {
-      supabase.from("reminders").delete().eq("id", id);
+      supabase.from("reminders").delete().eq("id", id).then(({ error }) => {
+        if (error) {
+          toast({ title: "Failed to delete reminder", description: error.message, variant: "destructive" });
+        } else {
+          toast({ title: "Reminder deleted", description: "Reminder has been removed successfully." });
+        }
+      });
     },
 
     sendWhatsAppNow: (leadIds, message) => {

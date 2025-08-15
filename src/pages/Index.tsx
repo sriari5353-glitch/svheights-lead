@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
+import RemindersSection from "@/components/RemindersSection";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -88,11 +89,11 @@ function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL"
 
 function getStatusBadge(status: LeadStatus) {
   const map: Record<LeadStatus, any> = {
-    "New Lead": "info",
-    Prospect: "accent",
-    Negotiation: "warning",
+    "New Lead": "default",
+    Prospect: "secondary",
+    Negotiation: "secondary", 
     "Hot Lead": "default",
-    Closed: "success",
+    Closed: "secondary",
     Lost: "destructive",
   };
   return <Badge variant={map[status]}>{status}</Badge>;
@@ -101,9 +102,9 @@ function getStatusBadge(status: LeadStatus) {
 function getFeedbackBadge(feedback?: Feedback) {
   if (!feedback) return null;
   const map: Record<string, any> = {
-    Prospect: "accent",
-    "Follow-up": "warning",
-    Visited: "success",
+    Prospect: "secondary",
+    "Follow-up": "secondary",
+    Visited: "secondary",
     Rejected: "destructive",
   };
   return <Badge variant={map[feedback]}>{feedback}</Badge>;
@@ -521,81 +522,6 @@ function BulkWhatsApp({ selectedIds, clearSelection }: { selectedIds: string[]; 
                 <span>{h.status === "sent" ? "Sent" : "Scheduled"} • {h.count} contact(s)</span>
               </div>
             ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function RemindersSection() {
-  const { reminders, leads, addReminder, deleteReminder } = useCRM();
-  const [leadId, setLeadId] = useState<string>("");
-  const [when, setWhen] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
-
-  const upcoming = useMemo(() => {
-    return [...reminders].sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
-  }, [reminders]);
-
-  const createReminder = () => {
-    if (!leadId || !when) {
-      toast({ title: "Pick contact and time", variant: "destructive" });
-      return;
-    }
-    addReminder({ leadId, datetime: new Date(when).toISOString(), message });
-    setLeadId("");
-    setWhen("");
-    setMessage("");
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" /> Reminders</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="grid gap-2">
-            <Label>Contact</Label>
-            <Select value={leadId} onValueChange={setLeadId}>
-              <SelectTrigger><SelectValue placeholder="Choose contact" /></SelectTrigger>
-              <SelectContent>
-                {leads.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>{l.name} • {l.phone}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Date & time</Label>
-            <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
-          </div>
-          <div className="grid gap-2 md:col-span-3">
-            <Label>Message</Label>
-            <Textarea rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Reminder notes (optional)" />
-          </div>
-          <div className="md:col-span-3">
-            <Button variant="hero" onClick={createReminder}>Add reminder</Button>
-          </div>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-medium mb-2">Upcoming</h4>
-          <div className="space-y-2 max-h-56 overflow-auto">
-            {upcoming.length === 0 && <p className="text-sm text-muted-foreground">No reminders set.</p>}
-            {upcoming.map((r) => {
-              const lead = leads.find((l) => l.id === r.leadId);
-              return (
-                <div key={r.id} className="flex items-center justify-between p-2 rounded-md border">
-                  <div className="text-sm">
-                    <div className="font-medium">{lead?.name} • {lead?.phone}</div>
-                    <div className="text-muted-foreground">{new Date(r.datetime).toLocaleString()} {r.message ? `• ${r.message}` : ""}</div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => deleteReminder(r.id)}>Remove</Button>
-                </div>
-              );
-            })}
           </div>
         </div>
       </CardContent>

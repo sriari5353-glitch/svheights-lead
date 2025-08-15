@@ -14,10 +14,11 @@ export type Database = {
   }
   public: {
     Tables: {
-      diary: {
+      daily_notes: {
         Row: {
           content: string
           created_at: string
+          date: string
           id: string
           updated_at: string
           user_id: string
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           content?: string
           created_at?: string
+          date: string
           id?: string
           updated_at?: string
           user_id: string
@@ -32,6 +34,34 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      diary: {
+        Row: {
+          content: string
+          created_at: string
+          date: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          date?: string
           id?: string
           updated_at?: string
           user_id?: string

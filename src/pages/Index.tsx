@@ -18,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
+import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -180,7 +181,7 @@ function CalendarNotesCard() {
         </div>
         <Textarea
           rows={6}
-          placeholder="Write today’s updates, meetings, follow-ups, ideas..."
+          placeholder="Write today's updates, meetings, follow-ups, ideas..."
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
@@ -422,7 +423,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                     <TableCell className="hidden xl:table-cell max-w-[320px] truncate text-muted-foreground">{l.notes}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" onClick={() => { setEditing(l); setOpen(true); }}>Edit</Button>
-                      <Button variant="ghost" size="sm" onClick={() => deleteLead(l.id)}><Trash2 className="h-4 w-4" /></Button>
+                      <DoubleConfirmDelete onDelete={() => deleteLead(l.id)} />
                     </TableCell>
                   </TableRow>
                 ))}

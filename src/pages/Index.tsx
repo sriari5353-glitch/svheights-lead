@@ -19,6 +19,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
+import Diary from "@/components/Diary";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -156,7 +157,7 @@ function CalendarNotesCard() {
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Diary</CardTitle>
+        <CardTitle className="text-sm font-medium">Daily Notes</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         <div className="flex items-center gap-2">
@@ -662,10 +663,9 @@ function Page() {
           </TabsContent>
 
           <TabsContent value="diary" className="space-y-4">
-            <div className="flex justify-center">
-              <div className="w-full max-w-md">
-                <CalendarNotesCard />
-              </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <CalendarNotesCard />
+              <Diary />
             </div>
           </TabsContent>
         </Tabs>

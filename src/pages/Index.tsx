@@ -178,7 +178,7 @@ function CalendarNotesCard() {
               />
             </PopoverContent>
           </Popover>
-          <Badge variant={saving ? "warning" : "info"}>{saving ? "Saving..." : lastSaved ? `Saved ${lastSaved}` : "Not saved"}</Badge>
+          <Badge variant={saving ? "secondary" : "default"}>{saving ? "Saving..." : lastSaved ? `Saved ${lastSaved}` : "Not saved"}</Badge>
         </div>
         <Textarea
           rows={6}

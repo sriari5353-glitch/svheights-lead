@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Phone, Edit, Trash2, Calendar, MessageSquare } from "lucide-react";
-import LeadForm from "./LeadForm";
+import { LeadForm } from "./LeadForm";
 import CalendarNotes from "./CalendarNotes";
 import { Lead } from "@/types/crm";
 
 const Leads = () => {
-  const { state, deleteLead, openWhatsAppTabs } = useCRM();
+  const { leads, deleteLead, sendWhatsAppNow } = useCRM();
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [selectedLeadForNotes, setSelectedLeadForNotes] = useState<Lead | null>(null);
 
@@ -29,13 +29,13 @@ const Leads = () => {
   };
 
   const handleWhatsApp = (lead: Lead) => {
-    openWhatsAppTabs([lead.id]);
+    sendWhatsAppNow([lead.id], "Hello! Following up on our conversation.");
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Leads ({state.leads.length})</h2>
+        <h2 className="text-2xl font-bold">Leads ({leads.length})</h2>
         <Dialog>
           <DialogTrigger asChild>
             <Button>Add New Lead</Button>
@@ -50,7 +50,7 @@ const Leads = () => {
       </div>
 
       <div className="grid gap-4">
-        {state.leads.map((lead) => (
+        {leads.map((lead) => (
           <Card key={lead.id} className="w-full">
             <CardHeader className="pb-4">
               <div className="flex justify-between items-start">
@@ -142,7 +142,17 @@ const Leads = () => {
           </DialogHeader>
           {editingLead && (
             <LeadForm 
-              lead={editingLead} 
+              initialData={{
+                name: editingLead.name,
+                phone: editingLead.phone,
+                source: editingLead.source,
+                sourceDetails: editingLead.sourceDetails,
+                status: editingLead.status,
+                notes: editingLead.notes,
+                feedback: editingLead.feedback,
+              }}
+              isEditing={true}
+              leadId={editingLead.id}
               onSuccess={() => setEditingLead(null)} 
             />
           )}

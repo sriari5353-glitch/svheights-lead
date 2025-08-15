@@ -1,96 +1,170 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { LeadForm } from '@/components/LeadForm';
-import { useCRM } from '@/context/CRMContext';
-import { formatPhoneForDisplay } from '@/utils/phoneUtils';
-import { Plus, Phone, User, Calendar } from 'lucide-react';
+import React, { useState } from "react";
+import { useCRM } from "@/context/CRMContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Phone, Edit, Trash2, Calendar, MessageSquare } from "lucide-react";
+import LeadForm from "./LeadForm";
+import CalendarNotes from "./CalendarNotes";
+import { Lead } from "@/types/crm";
 
-export const Leads: React.FC = () => {
-  const { leads } = useCRM();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+const Leads = () => {
+  const { state, deleteLead, openWhatsAppTabs } = useCRM();
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [selectedLeadForNotes, setSelectedLeadForNotes] = useState<Lead | null>(null);
 
-  const handleAddSuccess = () => {
-    setIsAddDialogOpen(false);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "New Lead": return "bg-blue-500";
+      case "Prospect": return "bg-yellow-500";
+      case "Hot Lead": return "bg-orange-500";
+      case "Negotiation": return "bg-purple-500";
+      case "Closed": return "bg-green-500";
+      case "Lost": return "bg-red-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const handleWhatsApp = (lead: Lead) => {
+    openWhatsAppTabs([lead.id]);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Leads</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <h2 className="text-2xl font-bold">Leads ({state.leads.length})</h2>
+        <Dialog>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Lead
-            </Button>
+            <Button>Add New Lead</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Lead</DialogTitle>
             </DialogHeader>
-            <LeadForm onSuccess={handleAddSuccess} />
+            <LeadForm />
           </DialogContent>
         </Dialog>
       </div>
 
       <div className="grid gap-4">
-        {leads.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <User className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No leads yet. Add your first lead to get started!</p>
+        {state.leads.map((lead) => (
+          <Card key={lead.id} className="w-full">
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <CardTitle className="text-lg">{lead.name}</CardTitle>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    {lead.phone}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={`${getStatusColor(lead.status)} text-white`}>
+                    {lead.status}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Source:</span> {lead.source}
+                </div>
+                <div>
+                  <span className="font-medium">Feedback:</span> {lead.feedback || "None"}
+                </div>
+              </div>
+              
+              {lead.sourceDetails && (
+                <div className="text-sm">
+                  <span className="font-medium">Source Details:</span> {lead.sourceDetails}
+                </div>
+              )}
+              
+              {lead.notes && (
+                <div className="text-sm">
+                  <span className="font-medium">Notes:</span> {lead.notes}
+                </div>
+              )}
+              
+              <Separator />
+              
+              <div className="flex justify-between items-center">
+                <div className="text-xs text-muted-foreground">
+                  Created: {new Date(lead.createdAt).toLocaleDateString()}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedLeadForNotes(lead)}
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Notes
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleWhatsApp(lead)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    WhatsApp
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingLead(lead)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteLead(lead.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          leads.map((lead) => (
-            <Card key={lead.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between">
-                  <span>{lead.name}</span>
-                  <span className={`text-sm px-2 py-1 rounded-full ${
-                    lead.status === 'Hot Lead' ? 'bg-red-100 text-red-800' :
-                    lead.status === 'Closed' ? 'bg-green-100 text-green-800' :
-                    lead.status === 'Lost' ? 'bg-gray-100 text-gray-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
-                    {lead.status}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Phone className="w-4 h-4 mr-2" />
-                  {formatPhoneForDisplay(lead.phone)}
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {new Date(lead.createdAt).toLocaleDateString()}
-                </div>
-                {lead.notes && (
-                  <p className="text-sm text-muted-foreground mt-2">{lead.notes}</p>
-                )}
-                {lead.feedback && (
-                  <div className="text-sm">
-                    <span className="font-medium">Feedback: </span>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      lead.feedback === 'Prospect' ? 'bg-green-100 text-green-800' :
-                      lead.feedback === 'Follow-up' ? 'bg-yellow-100 text-yellow-800' :
-                      lead.feedback === 'Visited' ? 'bg-blue-100 text-blue-800' :
-                      lead.feedback === 'Rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {lead.feedback}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
+        ))}
       </div>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={!!editingLead} onOpenChange={(open) => !open && setEditingLead(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Lead</DialogTitle>
+          </DialogHeader>
+          {editingLead && (
+            <LeadForm 
+              lead={editingLead} 
+              onSuccess={() => setEditingLead(null)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Calendar Notes Dialog */}
+      <Dialog open={!!selectedLeadForNotes} onOpenChange={(open) => !open && setSelectedLeadForNotes(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Calendar Notes</DialogTitle>
+          </DialogHeader>
+          {selectedLeadForNotes && (
+            <CalendarNotes 
+              contactId={selectedLeadForNotes.id} 
+              contactName={selectedLeadForNotes.name} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+export default Leads;

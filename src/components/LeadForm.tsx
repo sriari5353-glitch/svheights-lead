@@ -1,0 +1,213 @@
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { PhoneInput } from '@/components/PhoneInput';
+import { useCRM } from '@/context/CRMContext';
+import type { LeadSource, LeadStatus, Feedback } from '@/types/crm';
+import { isValidIndianMobile } from '@/utils/phoneUtils';
+
+interface LeadFormProps {
+  onSuccess?: () => void;
+  initialData?: {
+    name: string;
+    phone: string;
+    source: LeadSource;
+    sourceDetails?: string;
+    status: LeadStatus;
+    notes: string;
+    feedback: Feedback;
+  };
+  isEditing?: boolean;
+  leadId?: string;
+}
+
+export const LeadForm: React.FC<LeadFormProps> = ({ 
+  onSuccess, 
+  initialData, 
+  isEditing = false, 
+  leadId 
+}) => {
+  const { addLead, updateLead } = useCRM();
+  
+  const [formData, setFormData] = useState({
+    name: initialData?.name || '',
+    phone: initialData?.phone || '',
+    source: initialData?.source || 'Walk-in' as LeadSource,
+    sourceDetails: initialData?.sourceDetails || '',
+    status: initialData?.status || 'New Lead' as LeadStatus,
+    notes: initialData?.notes || '',
+    feedback: initialData?.feedback || '' as Feedback,
+  });
+
+  const [phoneError, setPhoneError] = useState('');
+
+  const handlePhoneChange = (phone: string) => {
+    setFormData(prev => ({ ...prev, phone }));
+    
+    // Validate phone number
+    if (phone && !isValidIndianMobile(phone)) {
+      setPhoneError('Please enter a valid Indian mobile number');
+    } else {
+      setPhoneError('');
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      return;
+    }
+    
+    if (!formData.phone.trim()) {
+      return;
+    }
+    
+    if (!isValidIndianMobile(formData.phone)) {
+      setPhoneError('Please enter a valid Indian mobile number');
+      return;
+    }
+
+    if (isEditing && leadId) {
+      updateLead({
+        id: leadId,
+        ...formData,
+      });
+    } else {
+      const result = addLead(formData);
+      if (!result.ok) {
+        return;
+      }
+    }
+
+    // Reset form if adding new lead
+    if (!isEditing) {
+      setFormData({
+        name: '',
+        phone: '',
+        source: 'Walk-in',
+        sourceDetails: '',
+        status: 'New Lead',
+        notes: '',
+        feedback: '',
+      });
+    }
+    
+    onSuccess?.();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Name *</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Enter lead name"
+          required
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="phone">Phone Number *</Label>
+        <PhoneInput
+          value={formData.phone}
+          onChange={handlePhoneChange}
+          placeholder="Enter phone number"
+        />
+        {phoneError && (
+          <p className="text-sm text-red-600 mt-1">{phoneError}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="source">Source</Label>
+        <Select
+          value={formData.source}
+          onValueChange={(value: LeadSource) => setFormData(prev => ({ ...prev, source: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Walk-in">Walk-in</SelectItem>
+            <SelectItem value="Referral">Referral</SelectItem>
+            <SelectItem value="Social Media">Social Media</SelectItem>
+            <SelectItem value="Other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {formData.source === 'Other' && (
+        <div>
+          <Label htmlFor="sourceDetails">Source Details</Label>
+          <Input
+            id="sourceDetails"
+            value={formData.sourceDetails}
+            onChange={(e) => setFormData(prev => ({ ...prev, sourceDetails: e.target.value }))}
+            placeholder="Specify other source"
+          />
+        </div>
+      )}
+
+      <div>
+        <Label htmlFor="status">Status</Label>
+        <Select
+          value={formData.status}
+          onValueChange={(value: LeadStatus) => setFormData(prev => ({ ...prev, status: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="New Lead">New Lead</SelectItem>
+            <SelectItem value="Prospect">Prospect</SelectItem>
+            <SelectItem value="Negotiation">Negotiation</SelectItem>
+            <SelectItem value="Hot Lead">Hot Lead</SelectItem>
+            <SelectItem value="Closed">Closed</SelectItem>
+            <SelectItem value="Lost">Lost</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="feedback">Feedback</Label>
+        <Select
+          value={formData.feedback}
+          onValueChange={(value: Feedback) => setFormData(prev => ({ ...prev, feedback: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select feedback" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">No feedback</SelectItem>
+            <SelectItem value="Prospect">Prospect</SelectItem>
+            <SelectItem value="Follow-up">Follow-up</SelectItem>
+            <SelectItem value="Visited">Visited</SelectItem>
+            <SelectItem value="Rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea
+          id="notes"
+          value={formData.notes}
+          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+          placeholder="Add any notes about this lead"
+          rows={3}
+        />
+      </div>
+
+      <Button type="submit" className="w-full">
+        {isEditing ? 'Update Lead' : 'Add Lead'}
+      </Button>
+    </form>
+  );
+};

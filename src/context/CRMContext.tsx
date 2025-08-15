@@ -3,6 +3,7 @@ import { toast } from "@/hooks/use-toast";
 import type { Lead, Reminder, ScheduledMessage, WhatsAppHistory, CRMState, CRMAction } from "@/types/crm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { addIndiaCode, normalizePhoneNumber, formatPhoneForWhatsApp } from "@/utils/phoneUtils";
 
 const STORAGE_KEY = "svh_leadmate_state_v1";
 
@@ -208,7 +209,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openWhatsAppTabs = (leadIds: string[], message: string) => {
     const leads = state.leads.filter((l) => leadIds.includes(l.id));
     leads.forEach((lead, idx) => {
-      const phone = lead.phone.replace(/\D/g, "");
+      const phone = formatPhoneForWhatsApp(lead.phone);
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       const target = idx === 0 ? "_blank" : "_blank";
       window.open(url, target);
@@ -219,17 +220,27 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value: CRMContextValue = useMemo(() => ({
     ...state,
     addLead: (payload) => {
-      const exists = state.leads.some((l) => l.phone.trim() === payload.phone.trim());
+      // Process phone number with +91 prefix
+      const processedPhone = addIndiaCode(payload.phone);
+      
+      // Check for duplicates using normalized phone numbers
+      const normalizedInput = normalizePhoneNumber(processedPhone);
+      const exists = state.leads.some((l) => 
+        normalizePhoneNumber(l.phone) === normalizedInput
+      );
+      
       if (exists) {
         const error = "Phone number must be unique";
         toast({ title: "Duplicate phone", description: error, variant: "destructive" });
         return { ok: false, error };
       }
+      
       if (!user?.id) {
         const error = "Not authenticated";
         toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
         return { ok: false, error };
       }
+      
       const now = new Date().toISOString();
       const id = crypto.randomUUID();
       supabase
@@ -237,7 +248,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .insert({
           id,
           name: payload.name,
-          phone: payload.phone,
+          phone: processedPhone, // Save processed phone with +91
           source: payload.source,
           source_details: payload.sourceDetails,
           status: payload.status,
@@ -251,16 +262,19 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (error) {
             toast({ title: "Failed to add lead", description: error.message, variant: "destructive" });
           } else {
-            toast({ title: "Lead added", description: `${payload.name} (${payload.phone})` });
+            toast({ title: "Lead added", description: `${payload.name} (${processedPhone})` });
           }
         });
       return { ok: true };
     },
     updateLead: (lead) => {
       const now = new Date().toISOString();
+      // Process phone number if it's being updated
+      const processedPhone = lead.phone ? addIndiaCode(lead.phone) : undefined;
+      
       const updates: any = {
         name: lead.name,
-        phone: lead.phone,
+        phone: processedPhone,
         source: lead.source,
         source_details: lead.sourceDetails,
         status: lead.status,

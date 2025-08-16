@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { CalendarDays, Save, ChevronDown, Filter, Calendar as CalendarIcon } from "lucide-react";
+import { CalendarDays, Save, ChevronDown, Filter, Calendar as CalendarIcon, Edit, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DatePicker from "./DatePicker";
 import ConversationTimeline from "./ConversationTimeline";
+import { LeadForm } from "./LeadForm";
+import { useCRM } from "@/context/CRMContext";
 
 interface ContactNote {
   id: string;
@@ -29,12 +32,18 @@ interface CalendarNotesProps {
 
 export default function CalendarNotes({ contactId, contactName }: CalendarNotesProps) {
   const { user } = useAuth();
+  const { leads } = useCRM();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [note, setNote] = useState("");
   const [notes, setNotes] = useState<ContactNote[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showChronological, setShowChronological] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [currentContactName, setCurrentContactName] = useState(contactName);
+
+  // Find the current lead/contact data
+  const currentLead = leads.find(lead => lead.id === contactId);
 
   useEffect(() => {
     if (user && contactId) {
@@ -47,6 +56,13 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
       fetchNoteForDate(selectedDate);
     }
   }, [selectedDate, user, contactId]);
+
+  // Update contact name when leads change
+  useEffect(() => {
+    if (currentLead) {
+      setCurrentContactName(currentLead.name);
+    }
+  }, [currentLead]);
 
   async function fetchAllNotes() {
     if (!user) return;
@@ -148,6 +164,14 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
     }
   }
 
+  const handleEditSuccess = () => {
+    setShowEditForm(false);
+    toast({
+      title: "Contact updated",
+      description: "Contact information has been updated successfully.",
+    });
+  };
+
   const datesWithNotes = notes.map(note => new Date(note.date));
 
   if (!user) {
@@ -166,42 +190,87 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5" />
-            Notes for {contactName}
+            Notes for {currentContactName}
           </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                View Options
-                <ChevronDown className="h-4 w-4 ml-2" />
+          <div className="flex items-center gap-2">
+            {currentLead && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEditForm(!showEditForm)}
+              >
+                {showEditForm ? (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel Edit
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Contact
+                  </>
+                )}
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56">
-              <div className="space-y-2">
-                <Button
-                  variant={!showChronological ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => setShowChronological(false)}
-                >
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  Calendar View
+            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  View Options
+                  <ChevronDown className="h-4 w-4 ml-2" />
                 </Button>
-                <Button
-                  variant={showChronological ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => setShowChronological(true)}
-                >
-                  <CalendarDays className="h-4 w-4 mr-2" />
-                  Timeline View
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverTrigger>
+              <PopoverContent className="w-56">
+                <div className="space-y-2">
+                  <Button
+                    variant={!showChronological ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => setShowChronological(false)}
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    Calendar View
+                  </Button>
+                  <Button
+                    variant={showChronological ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => setShowChronological(true)}
+                  >
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    Timeline View
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {showEditForm && currentLead ? (
+          <Card className="border-2 border-primary/20 bg-muted/50">
+            <CardHeader>
+              <CardTitle className="text-lg">Edit Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeadForm 
+                initialData={{
+                  name: currentLead.name,
+                  phone: currentLead.phone,
+                  source: currentLead.source,
+                  sourceDetails: currentLead.sourceDetails,
+                  status: currentLead.status,
+                  notes: currentLead.notes,
+                  feedback: currentLead.feedback,
+                }}
+                isEditing={true}
+                leadId={currentLead.id}
+                onSuccess={handleEditSuccess} 
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+
         {!showChronological ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-4">
@@ -235,7 +304,7 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={8}
-                placeholder={`Add a note for ${contactName} on ${format(selectedDate, 'PPP')}...`}
+                placeholder={`Add a note for ${currentContactName} on ${format(selectedDate, 'PPP')}...`}
                 disabled={loading || saving}
                 className="resize-none"
               />

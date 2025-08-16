@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -321,6 +321,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
   const [st, setSt] = useState<LeadStatus | undefined>(undefined);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>(undefined);
@@ -389,12 +390,21 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
           </Select>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button variant="hero" className="shrink-0"><Plus className="h-4 w-4" /> Add Lead</Button>
-          </DialogTrigger>
-          <LeadForm open={open} setOpen={setOpen} edit={editing} />
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant={isEditMode ? "default" : "outline"} 
+            onClick={() => setIsEditMode(!isEditMode)}
+            className="shrink-0"
+          >
+            <Edit className="h-4 w-4" /> {isEditMode ? "Done" : "Edit"}
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button variant="hero" className="shrink-0"><Plus className="h-4 w-4" /> Add Lead</Button>
+            </DialogTrigger>
+            <LeadForm open={open} setOpen={setOpen} edit={editing} />
+          </Dialog>
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -406,7 +416,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                   <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={(v) => toggleAll(Boolean(v))} /></TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead className="hidden md:table-cell">Source</TableHead>
+                  <TableHead className={isEditMode ? "md:table-cell" : "hidden"}">Source</TableHead>
                   <TableHead className="hidden lg:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Feedback</TableHead>
                   <TableHead className="hidden xl:table-cell">Notes</TableHead>
@@ -419,7 +429,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                     <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
                     <TableCell className="font-medium">{l.name}</TableCell>
                     <TableCell>{l.phone}</TableCell>
-                    <TableCell className="hidden md:table-cell">{l.source}{l.sourceDetails ? <span className="text-muted-foreground"> • {l.sourceDetails}</span> : null}</TableCell>
+                    <TableCell className={isEditMode ? "md:table-cell" : "hidden"}>{l.source}{l.sourceDetails ? <span className="text-muted-foreground"> • {l.sourceDetails}</span> : null}</TableCell>
                     <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
                     <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>
                     <TableCell className="hidden xl:table-cell max-w-[320px] truncate text-muted-foreground">{l.notes}</TableCell>

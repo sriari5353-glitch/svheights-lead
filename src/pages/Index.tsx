@@ -333,15 +333,56 @@ function NotesCalendarDialog({
     setNotes(currentNotes);
   }, [currentNotes, open]);
 
-  const handleSave = async () => {
-    let finalNotes = notes;
-    
-    if (selectedDate && syncOption !== "none") {
-      const dateStr = format(selectedDate, "PPP");
-      finalNotes = notes + (notes ? "\n\n" : "") + `📅 ${dateStr}`;
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      // Auto-add date to notes when selected
+      const dateStr = format(date, "PPP");
+      const dateNote = `📅 ${dateStr}`;
+      
+      // Check if this date is already in notes to avoid duplicates
+      if (!notes.includes(dateNote)) {
+        const updatedNotes = notes ? `${notes}\n\n${dateNote}` : dateNote;
+        setNotes(updatedNotes);
+      }
     }
+  };
 
-    onSave(finalNotes);
+  const handleSaveToDiary = async () => {
+    if (!selectedDate) return;
+    
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const diaryNote = `Follow-up with ${leadName} - ${notes}`;
+    
+    try {
+      // Get existing diary content for the date
+      const existingDiary = localStorage.getItem("svh_day_diary_v1");
+      const diaryData = existingDiary ? JSON.parse(existingDiary) : {};
+      
+      // Add or append to diary entry
+      if (diaryData[dateStr]) {
+        diaryData[dateStr].text = diaryData[dateStr].text + `\n\n${diaryNote}`;
+      } else {
+        diaryData[dateStr] = { text: diaryNote, updatedAt: new Date().toISOString() };
+      }
+      
+      localStorage.setItem("svh_day_diary_v1", JSON.stringify(diaryData));
+      
+      toast({ 
+        title: "Saved to diary", 
+        description: `Entry added to diary for ${format(selectedDate, "PPP")}` 
+      });
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to save to diary", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    onSave(notes);
 
     // Handle sync options
     if (selectedDate && (syncOption === "reminder" || syncOption === "both")) {
@@ -358,11 +399,7 @@ function NotesCalendarDialog({
     }
 
     if (selectedDate && (syncOption === "diary" || syncOption === "both")) {
-      // The diary sync will happen automatically when the user opens the diary on that date
-      toast({ 
-        title: "Date noted", 
-        description: `Date has been added to notes${syncOption === "both" ? " and reminder created" : ""}` 
-      });
+      await handleSaveToDiary();
     }
 
     setOpen(false);
@@ -394,7 +431,7 @@ function NotesCalendarDialog({
           </div>
           
           <div className="grid gap-2">
-            <Label>Select Date (Optional)</Label>
+            <Label>Select Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start">
@@ -406,7 +443,7 @@ function NotesCalendarDialog({
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={setSelectedDate}
+                  onSelect={handleDateSelect}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
@@ -416,17 +453,28 @@ function NotesCalendarDialog({
 
           {selectedDate && (
             <>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSaveToDiary}
+                  className="flex-1"
+                >
+                  Save to Diary
+                </Button>
+              </div>
+
               <div className="grid gap-2">
-                <Label>Sync Options</Label>
+                <Label>Additional Sync Options</Label>
                 <Select value={syncOption} onValueChange={(v: "none" | "diary" | "reminder" | "both") => setSyncOption(v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose sync option" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Just add date to notes</SelectItem>
-                    <SelectItem value="diary">Add to diary for this date</SelectItem>
+                    <SelectItem value="none">No additional sync</SelectItem>
+                    <SelectItem value="diary">Also save to diary on save</SelectItem>
                     <SelectItem value="reminder">Create reminder for this date</SelectItem>
-                    <SelectItem value="both">Add to diary and create reminder</SelectItem>
+                    <SelectItem value="both">Save to diary and create reminder</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

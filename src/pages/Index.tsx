@@ -416,11 +416,10 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                 <TableRow>
                   <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={(v) => toggleAll(Boolean(v))} /></TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
+                  <TableHead>Notes</TableHead>
                   <TableHead className={isEditMode ? "md:table-cell" : "hidden"}>Source</TableHead>
                   <TableHead className="hidden lg:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Feedback</TableHead>
-                  <TableHead className="hidden xl:table-cell">Notes</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -428,12 +427,16 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                 {filtered.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
-                    <TableCell className="font-medium">{l.name}</TableCell>
-                    <TableCell>{l.phone}</TableCell>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div>{l.name}</div>
+                        <div className="text-sm text-muted-foreground">{l.phone}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[320px] truncate text-muted-foreground">{l.notes}</TableCell>
                     <TableCell className={isEditMode ? "md:table-cell" : "hidden"}>{l.source}{l.sourceDetails ? <span className="text-muted-foreground"> • {l.sourceDetails}</span> : null}</TableCell>
                     <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
                     <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>
-                    <TableCell className="hidden xl:table-cell max-w-[320px] truncate text-muted-foreground">{l.notes}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" onClick={() => { setEditing(l); setOpen(true); }}>Edit</Button>
                       <DoubleConfirmDelete onDelete={() => deleteLead(l.id)} />
@@ -442,7 +445,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">No contacts found</TableCell>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No contacts found</TableCell>
                   </TableRow>
                 )}
               </TableBody>

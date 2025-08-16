@@ -157,10 +157,7 @@ function CalendarNotesCard() {
 
   return (
     <Card className="shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Daily Notes</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 pt-6">
         <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>

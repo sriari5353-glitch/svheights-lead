@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { CRMProvider, useCRM } from "@/context/CRMContext";
 import type { Feedback, Lead, LeadSource, LeadStatus } from "@/types/crm";
@@ -416,7 +415,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                 <TableRow>
                   <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={(v) => toggleAll(Boolean(v))} /></TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Notes</TableHead>
+                  <TableHead className="min-w-[200px] md:min-w-[300px]">Notes</TableHead>
                   <TableHead className={isEditMode ? "md:table-cell" : "hidden"}>Source</TableHead>
                   <TableHead className="hidden lg:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Feedback</TableHead>
@@ -433,7 +432,11 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                         <div className="text-sm text-muted-foreground">{l.phone}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[320px] truncate text-muted-foreground">{l.notes}</TableCell>
+                    <TableCell className="min-w-[200px] md:min-w-[300px]">
+                      <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
+                        {l.notes || "No notes"}
+                      </div>
+                    </TableCell>
                     <TableCell className={isEditMode ? "md:table-cell" : "hidden"}>{l.source}{l.sourceDetails ? <span className="text-muted-foreground"> • {l.sourceDetails}</span> : null}</TableCell>
                     <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
                     <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>

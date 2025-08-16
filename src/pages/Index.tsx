@@ -603,10 +603,7 @@ function Page() {
           </TabsContent>
 
           <TabsContent value="diary" className="space-y-4">
-            <div className="grid gap-6 md:grid-cols-2">
-              <CalendarNotesCard />
-              <Diary />
-            </div>
+            <Diary />
           </TabsContent>
         </Tabs>
       </main>

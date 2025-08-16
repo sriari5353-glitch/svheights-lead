@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -7,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
-import { BookOpen, Calendar as CalendarIcon, List, Save } from "lucide-react";
+import { BookOpen, Calendar as CalendarIcon, List } from "lucide-react";
 import { format } from "date-fns";
 
 interface DiaryEntry {
@@ -147,53 +146,6 @@ export default function Diary() {
     }
   }
 
-  async function saveToDailyNotes() {
-    if (!user || !content.trim()) {
-      toast({
-        title: "Nothing to save",
-        description: "Please add some content before saving to daily notes.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    
-    try {
-      const { error } = await supabase
-        .from("daily_notes")
-        .upsert({
-          user_id: user.id,
-          date: dateStr,
-          content: content,
-          updated_at: new Date().toISOString(),
-        }, { 
-          onConflict: "user_id,date" 
-        });
-
-      if (error) {
-        console.error("Error saving to daily notes:", error);
-        toast({
-          title: "Error saving to daily notes",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Saved to daily notes",
-          description: `Content for ${format(selectedDate, 'PPP')} saved to daily notes.`,
-        });
-      }
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      toast({
-        title: "Error saving to daily notes",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    }
-  }
-
   if (!user) {
     return (
       <Card>
@@ -258,24 +210,13 @@ export default function Diary() {
                   <span className="text-sm text-muted-foreground">
                     {content.length} characters
                   </span>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={saveToDailyNotes} 
-                      disabled={loading || saving || !content.trim()}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save to Daily Notes
-                    </Button>
-                    <Button 
-                      onClick={saveDiary} 
-                      disabled={loading || saving}
-                      variant="hero"
-                    >
-                      {saving ? "Saving..." : "Save Diary"}
-                    </Button>
-                  </div>
+                  <Button 
+                    onClick={saveDiary} 
+                    disabled={loading || saving}
+                    variant="hero"
+                  >
+                    {saving ? "Saving..." : "Save Diary"}
+                  </Button>
                 </div>
               </div>
             </div>

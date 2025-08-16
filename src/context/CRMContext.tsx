@@ -50,6 +50,7 @@ interface CRMContextValue extends CRMState {
   deleteLead: (id: string) => void;
 
   addReminder: (reminder: Omit<Reminder, "id" | "notified">) => Promise<{ ok: boolean; error?: string }>;
+  updateReminder: (reminder: Reminder) => Promise<{ ok: boolean; error?: string }>;
   deleteReminder: (id: string) => void;
 
   sendWhatsAppNow: (leadIds: string[], message: string) => void;
@@ -336,7 +337,6 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return { ok: false, error: error.message };
         }
 
-        // Add to local state immediately for optimistic updates
         const newReminder: Reminder = {
           id,
           leadId: payload.leadId,
@@ -362,6 +362,51 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ok: false, error: "Unexpected error occurred" };
       }
     },
+
+    updateReminder: async (reminder) => {
+      if (!user?.id) {
+        const error = "Not authenticated";
+        toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
+        return { ok: false, error };
+      }
+
+      try {
+        const { error } = await supabase
+          .from("reminders")
+          .update({
+            datetime: reminder.datetime,
+            message: reminder.message,
+            notified: reminder.notified,
+          })
+          .eq("id", reminder.id);
+
+        if (error) {
+          console.error("Failed to update reminder:", error);
+          toast({ 
+            title: "Failed to update reminder", 
+            description: error.message, 
+            variant: "destructive" 
+          });
+          return { ok: false, error: error.message };
+        }
+
+        toast({ 
+          title: "Reminder updated", 
+          description: reminder.notified ? "Reminder marked as completed" : "Reminder has been updated successfully" 
+        });
+        
+        return { ok: true };
+      } catch (error) {
+        console.error("Unexpected error updating reminder:", error);
+        toast({ 
+          title: "Failed to update reminder", 
+          description: "An unexpected error occurred. Please try again.", 
+          variant: "destructive" 
+        });
+        return { ok: false, error: "Unexpected error occurred" };
+      }
+    },
+
     deleteReminder: (id) => {
       supabase.from("reminders").delete().eq("id", id).then(({ error }) => {
         if (error) {

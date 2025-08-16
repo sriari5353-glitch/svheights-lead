@@ -13,9 +13,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
@@ -374,7 +375,7 @@ function NotesCalendarDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-          <Calendar className="h-4 w-4" />
+          <CalendarIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -397,19 +398,18 @@ function NotesCalendarDialog({
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <CalendarIcon className="h-4 w-4 mr-2" />
                   {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <div className="p-3">
-                  <input
-                    type="date"
-                    className="w-full p-2 border rounded"
-                    onChange={(e) => setSelectedDate(e.target.value ? new Date(e.target.value) : undefined)}
-                    value={selectedDate ? format(selectedDate, "yyyy-MM-dd") : ""}
-                  />
-                </div>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
               </PopoverContent>
             </Popover>
           </div>
@@ -568,7 +568,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                   <TableHead className="min-w-[200px] md:min-w-[300px]">
                     <div className="flex items-center gap-2">
                       Notes
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </TableHead>
                   <TableHead className={isEditMode ? "md:table-cell" : "hidden"}>Source</TableHead>

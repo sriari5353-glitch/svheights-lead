@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import { CRMProvider, useCRM } from "@/context/CRMContext";
 import type { Feedback, Lead, LeadSource, LeadStatus } from "@/types/crm";
@@ -416,7 +417,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                   <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={(v) => toggleAll(Boolean(v))} /></TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead className={isEditMode ? "md:table-cell" : "hidden"}">Source</TableHead>
+                  <TableHead className={isEditMode ? "md:table-cell" : "hidden"}>Source</TableHead>
                   <TableHead className="hidden lg:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Feedback</TableHead>
                   <TableHead className="hidden xl:table-cell">Notes</TableHead>

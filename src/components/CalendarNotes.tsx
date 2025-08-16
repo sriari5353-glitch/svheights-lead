@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { CalendarDays, Save, ChevronDown, Filter } from "lucide-react";
+import { CalendarDays, Save, ChevronDown, Filter, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DatePicker from "./DatePicker";
+import ConversationTimeline from "./ConversationTimeline";
 
 interface ContactNote {
   id: string;
@@ -35,14 +36,12 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
   const [loading, setLoading] = useState(false);
   const [showChronological, setShowChronological] = useState(false);
 
-  // Load all notes for this contact
   useEffect(() => {
     if (user && contactId) {
       fetchAllNotes();
     }
   }, [user, contactId]);
 
-  // Load note for selected date
   useEffect(() => {
     if (user && contactId && selectedDate) {
       fetchNoteForDate(selectedDate);
@@ -135,7 +134,6 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
           title: "Note saved",
           description: `Note for ${format(selectedDate, 'PPP')} saved successfully.`,
         });
-        // Refresh notes list
         fetchAllNotes();
       }
     } catch (error) {
@@ -186,6 +184,7 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
                   className="w-full justify-start"
                   onClick={() => setShowChronological(false)}
                 >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
                   Calendar View
                 </Button>
                 <Button
@@ -194,7 +193,8 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
                   className="w-full justify-start"
                   onClick={() => setShowChronological(true)}
                 >
-                  Chronological List
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  Timeline View
                 </Button>
               </div>
             </PopoverContent>
@@ -204,7 +204,7 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
       <CardContent className="space-y-4">
         {!showChronological ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-4">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -221,18 +221,20 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
                   },
                 }}
               />
-              <div className="text-xs text-muted-foreground mt-2">
-                Dates with notes are highlighted
+              <div className="text-xs text-muted-foreground">
+                Dates with notes are highlighted. Click any date to view or add notes.
               </div>
             </div>
             <div className="space-y-4">
-              <div className="text-sm font-medium">
-                Note for {format(selectedDate, 'PPP')}
-              </div>
+              <DatePicker
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                label="Jump to Date"
+              />
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                rows={10}
+                rows={8}
                 placeholder={`Add a note for ${contactName} on ${format(selectedDate, 'PPP')}...`}
                 disabled={loading || saving}
                 className="resize-none"
@@ -254,48 +256,11 @@ export default function CalendarNotes({ contactId, contactName }: CalendarNotesP
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="text-sm font-medium">
-              All Notes for {contactName} ({notes.length})
-            </div>
-            {loading ? (
-              <div className="text-center py-4">Loading notes...</div>
-            ) : notes.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No notes yet. Select a date in calendar view to start adding notes.
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {notes.map((noteItem) => (
-                  <Card 
-                    key={noteItem.id} 
-                    className="cursor-pointer hover:bg-muted/50" 
-                    onClick={() => {
-                      setSelectedDate(new Date(noteItem.date));
-                      setShowChronological(false);
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="font-medium">
-                          {format(new Date(noteItem.date), 'PPP')}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {noteItem.content.length} chars
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground line-clamp-3">
-                        {noteItem.content || "No content"}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-2">
-                        Updated: {format(new Date(noteItem.updated_at), 'PPp')}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+          <ConversationTimeline
+            notes={notes}
+            onDateSelect={setSelectedDate}
+            onViewModeChange={() => setShowChronological(false)}
+          />
         )}
       </CardContent>
     </Card>

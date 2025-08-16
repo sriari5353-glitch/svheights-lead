@@ -13,9 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
@@ -311,6 +310,153 @@ function LeadForm({ open, setOpen, edit }: { open: boolean; setOpen: (v: boolean
   );
 }
 
+function NotesCalendarDialog({ 
+  leadId, 
+  leadName, 
+  currentNotes, 
+  onSave 
+}: { 
+  leadId: string; 
+  leadName: string; 
+  currentNotes: string; 
+  onSave: (notes: string) => void; 
+}) {
+  const { addReminder } = useCRM();
+  const [open, setOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [notes, setNotes] = useState(currentNotes);
+  const [syncOption, setSyncOption] = useState<"none" | "diary" | "reminder" | "both">("none");
+  const [reminderMessage, setReminderMessage] = useState("");
+
+  useEffect(() => {
+    setNotes(currentNotes);
+  }, [currentNotes, open]);
+
+  const handleSave = async () => {
+    let finalNotes = notes;
+    
+    if (selectedDate && syncOption !== "none") {
+      const dateStr = format(selectedDate, "PPP");
+      finalNotes = notes + (notes ? "\n\n" : "") + `📅 ${dateStr}`;
+    }
+
+    onSave(finalNotes);
+
+    // Handle sync options
+    if (selectedDate && (syncOption === "reminder" || syncOption === "both")) {
+      try {
+        await addReminder({
+          leadId,
+          datetime: selectedDate.toISOString(),
+          message: reminderMessage || `Follow up with ${leadName}`
+        });
+        toast({ title: "Reminder added", description: "Reminder has been created successfully" });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to create reminder", variant: "destructive" });
+      }
+    }
+
+    if (selectedDate && (syncOption === "diary" || syncOption === "both")) {
+      // The diary sync will happen automatically when the user opens the diary on that date
+      toast({ 
+        title: "Date noted", 
+        description: `Date has been added to notes${syncOption === "both" ? " and reminder created" : ""}` 
+      });
+    }
+
+    setOpen(false);
+    setSelectedDate(undefined);
+    setSyncOption("none");
+    setReminderMessage("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+          <Calendar className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Date to Notes - {leadName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid gap-2">
+            <Label>Notes</Label>
+            <Textarea 
+              value={notes} 
+              onChange={(e) => setNotes(e.target.value)} 
+              rows={4}
+              placeholder="Add your notes here..."
+            />
+          </div>
+          
+          <div className="grid gap-2">
+            <Label>Select Date (Optional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="justify-start">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-3">
+                  <input
+                    type="date"
+                    className="w-full p-2 border rounded"
+                    onChange={(e) => setSelectedDate(e.target.value ? new Date(e.target.value) : undefined)}
+                    value={selectedDate ? format(selectedDate, "yyyy-MM-dd") : ""}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {selectedDate && (
+            <>
+              <div className="grid gap-2">
+                <Label>Sync Options</Label>
+                <Select value={syncOption} onValueChange={(v: "none" | "diary" | "reminder" | "both") => setSyncOption(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose sync option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Just add date to notes</SelectItem>
+                    <SelectItem value="diary">Add to diary for this date</SelectItem>
+                    <SelectItem value="reminder">Create reminder for this date</SelectItem>
+                    <SelectItem value="both">Add to diary and create reminder</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(syncOption === "reminder" || syncOption === "both") && (
+                <div className="grid gap-2">
+                  <Label>Reminder Message (Optional)</Label>
+                  <Input 
+                    value={reminderMessage} 
+                    onChange={(e) => setReminderMessage(e.target.value)} 
+                    placeholder={`Follow up with ${leadName}`}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            Save Notes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL" }) {
   const { leads, deleteLead, updateLead } = useCRM();
   const [selection, setSelection] = useState<Record<string, boolean>>({});
@@ -348,6 +494,13 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   };
 
   const selectedIds = Object.keys(selection).filter((id) => selection[id]);
+
+  const handleNotesUpdate = (leadId: string, newNotes: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      updateLead({ ...lead, notes: newNotes });
+    }
+  };
 
   return (
     <section className="space-y-4">
@@ -412,7 +565,12 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                 <TableRow>
                   <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={(v) => toggleAll(Boolean(v))} /></TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead className="min-w-[200px] md:min-w-[300px]">Notes</TableHead>
+                  <TableHead className="min-w-[200px] md:min-w-[300px]">
+                    <div className="flex items-center gap-2">
+                      Notes
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </TableHead>
                   <TableHead className={isEditMode ? "md:table-cell" : "hidden"}>Source</TableHead>
                   <TableHead className="hidden lg:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Feedback</TableHead>
@@ -430,8 +588,16 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                       </div>
                     </TableCell>
                     <TableCell className="min-w-[200px] md:min-w-[300px]">
-                      <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
-                        {l.notes || "No notes"}
+                      <div className="flex items-start gap-2">
+                        <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words flex-1">
+                          {l.notes || "No notes"}
+                        </div>
+                        <NotesCalendarDialog
+                          leadId={l.id}
+                          leadName={l.name}
+                          currentNotes={l.notes}
+                          onSave={(notes) => handleNotesUpdate(l.id, notes)}
+                        />
                       </div>
                     </TableCell>
                     <TableCell className={isEditMode ? "md:table-cell" : "hidden"}>{l.source}{l.sourceDetails ? <span className="text-muted-foreground"> • {l.sourceDetails}</span> : null}</TableCell>

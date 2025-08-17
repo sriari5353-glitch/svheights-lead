@@ -1,3 +1,4 @@
+
 export type LeadSource = "Walk-in" | "Referral" | "Social Media" | "Other";
 export type LeadStatus = "New Lead" | "Prospect" | "Negotiation" | "Hot Lead" | "Closed" | "Lost";
 export type Feedback = "Prospect" | "Follow-up" | "Visited" | "Rejected" | "";
@@ -11,6 +12,7 @@ export interface Lead {
   status: LeadStatus;
   notes: string;
   feedback: Feedback;
+  leadDate?: string; // ISO date string, optional
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }

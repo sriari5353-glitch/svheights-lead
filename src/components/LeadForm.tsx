@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,9 +49,22 @@ export const LeadForm: React.FC<LeadFormProps> = ({
     feedback: initialData?.feedback || '' as Feedback,
   });
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    initialData?.leadDate ? new Date(initialData.leadDate) : undefined
-  );
+  // Fix date handling to avoid timezone issues
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+    if (initialData?.leadDate) {
+      // Parse the date string and create a date in local timezone
+      const dateStr = initialData.leadDate;
+      if (dateStr.includes('T')) {
+        // If it's an ISO string, parse it properly
+        return new Date(dateStr);
+      } else {
+        // If it's just a date string, create a local date
+        return new Date(dateStr + 'T00:00:00');
+      }
+    }
+    return undefined;
+  });
+
   const [phoneError, setPhoneError] = useState('');
 
   const handlePhoneChange = (phone: string) => {
@@ -61,6 +75,17 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       setPhoneError('Please enter a valid Indian mobile number');
     } else {
       setPhoneError('');
+    }
+  };
+
+  // Fix date selection to avoid timezone issues
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Create a new date in local timezone to avoid timezone conversion issues
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      setSelectedDate(localDate);
+    } else {
+      setSelectedDate(undefined);
     }
   };
 
@@ -80,9 +105,19 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       return;
     }
 
+    // Format date properly to avoid timezone issues
+    let leadDateString: string | undefined;
+    if (selectedDate) {
+      // Format as YYYY-MM-DD to avoid timezone conversion
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      leadDateString = `${year}-${month}-${day}T00:00:00.000Z`;
+    }
+
     const leadData = {
       ...formData,
-      leadDate: selectedDate ? selectedDate.toISOString() : undefined,
+      leadDate: leadDateString,
     };
 
     if (isEditing && leadId) {
@@ -158,7 +193,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={setSelectedDate}
+              onSelect={handleDateSelect}
               initialFocus
               className="p-3 pointer-events-auto"
             />

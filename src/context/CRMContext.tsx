@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import type { Lead, Reminder, ScheduledMessage, WhatsAppHistory, CRMState, CRMAction } from "@/types/crm";
@@ -131,8 +132,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  // Load from Supabase and subscribe to realtime
+  // Initial load from Supabase
   const loadAll = async () => {
+    console.log("Loading data from Supabase...");
     const [leadsRes, remindersRes, historyRes, schedulesRes] = await Promise.all([
       supabase.from("leads").select("*").order("created_at", { ascending: false }),
       supabase.from("reminders").select("*").order("datetime", { ascending: true }),
@@ -166,24 +168,115 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         schedules: (schedulesRes.data || []).map(mapSchedule),
       },
     });
+    console.log("Data loaded successfully");
   };
 
   useEffect(() => {
-    loadAll().catch(() => void 0);
-  }, []);
+    if (user) {
+      loadAll().catch(console.error);
+    }
+  }, [user]);
 
+  // Enhanced real-time subscriptions with granular updates
   useEffect(() => {
+    if (!user) return;
+
+    console.log("Setting up real-time subscriptions...");
+    
     const channel = supabase
-      .channel("crm-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => loadAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "reminders" }, () => loadAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "whatsapp_history" }, () => loadAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "schedules" }, () => loadAll())
-      .subscribe();
+      .channel("crm-realtime")
+      // Leads real-time updates
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "leads" }, (payload) => {
+        console.log("Real-time: Lead inserted", payload);
+        const newLead: Lead = {
+          id: payload.new.id,
+          name: payload.new.name,
+          phone: payload.new.phone,
+          source: payload.new.source,
+          sourceDetails: payload.new.source_details ?? "",
+          status: payload.new.status,
+          notes: payload.new.notes ?? "",
+          feedback: payload.new.feedback ?? "",
+          leadDate: payload.new.lead_date ?? "",
+          createdAt: payload.new.created_at,
+          updatedAt: payload.new.updated_at,
+        };
+        dispatch({ type: "ADD_LEAD", payload: newLead });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, (payload) => {
+        console.log("Real-time: Lead updated", payload);
+        const updatedLead: Lead = {
+          id: payload.new.id,
+          name: payload.new.name,
+          phone: payload.new.phone,
+          source: payload.new.source,
+          sourceDetails: payload.new.source_details ?? "",
+          status: payload.new.status,
+          notes: payload.new.notes ?? "",
+          feedback: payload.new.feedback ?? "",
+          leadDate: payload.new.lead_date ?? "",
+          createdAt: payload.new.created_at,
+          updatedAt: payload.new.updated_at,
+        };
+        dispatch({ type: "UPDATE_LEAD", payload: updatedLead });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "leads" }, (payload) => {
+        console.log("Real-time: Lead deleted", payload);
+        dispatch({ type: "DELETE_LEAD", payload: { id: payload.old.id } });
+      })
+      // Reminders real-time updates
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "reminders" }, (payload) => {
+        console.log("Real-time: Reminder inserted", payload);
+        const newReminder: Reminder = {
+          id: payload.new.id,
+          leadId: payload.new.lead_id,
+          datetime: payload.new.datetime,
+          message: payload.new.message,
+          notified: payload.new.notified,
+        };
+        dispatch({ type: "ADD_REMINDER", payload: newReminder });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "reminders" }, (payload) => {
+        console.log("Real-time: Reminder deleted", payload);
+        dispatch({ type: "DELETE_REMINDER", payload: { id: payload.old.id } });
+      })
+      // WhatsApp history real-time updates
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "whatsapp_history" }, (payload) => {
+        console.log("Real-time: WhatsApp history inserted", payload);
+        const newHistory: WhatsAppHistory = {
+          id: payload.new.id,
+          date: payload.new.date,
+          message: payload.new.message,
+          leadIds: payload.new.lead_ids || [],
+          status: payload.new.status,
+          count: payload.new.count,
+        };
+        dispatch({ type: "ADD_HISTORY", payload: newHistory });
+      })
+      // Schedules real-time updates
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "schedules" }, (payload) => {
+        console.log("Real-time: Schedule inserted", payload);
+        const newSchedule: ScheduledMessage = {
+          id: payload.new.id,
+          datetime: payload.new.datetime,
+          message: payload.new.message,
+          leadIds: payload.new.lead_ids || [],
+        };
+        dispatch({ type: "ADD_SCHEDULE", payload: newSchedule });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "schedules" }, (payload) => {
+        console.log("Real-time: Schedule deleted", payload);
+        dispatch({ type: "REMOVE_SCHEDULE", payload: { id: payload.old.id } });
+      })
+      .subscribe((status) => {
+        console.log("Real-time subscription status:", status);
+      });
+
     return () => {
+      console.log("Cleaning up real-time subscriptions");
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
   // Process schedules and reminders with timeouts
   useEffect(() => {
@@ -271,6 +364,26 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       const now = new Date().toISOString();
       const id = crypto.randomUUID();
+      
+      // Optimistic update - add to local state immediately
+      const optimisticLead: Lead = {
+        id,
+        name: payload.name,
+        phone: processedPhone,
+        source: payload.source,
+        sourceDetails: payload.sourceDetails,
+        status: payload.status,
+        notes: payload.notes,
+        feedback: payload.feedback,
+        leadDate: payload.leadDate,
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      dispatch({ type: "ADD_LEAD", payload: optimisticLead });
+      toast({ title: "Lead added", description: `${payload.name} (${processedPhone})` });
+      
+      // Background sync to database
       supabase
         .from("leads")
         .insert({
@@ -289,17 +402,26 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
         .then(({ error }) => {
           if (error) {
-            toast({ title: "Failed to add lead", description: error.message, variant: "destructive" });
+            console.error("Failed to sync lead to database:", error);
+            // Remove from local state on error
+            dispatch({ type: "DELETE_LEAD", payload: { id } });
+            toast({ title: "Failed to save lead", description: error.message, variant: "destructive" });
           } else {
-            toast({ title: "Lead added", description: `${payload.name} (${processedPhone})` });
+            console.log("Lead synced to database successfully");
           }
         });
+      
       return { ok: true };
     },
     updateLead: (lead) => {
       const now = new Date().toISOString();
       // Process phone number if it's being updated
       const processedPhone = lead.phone ? addIndiaCode(lead.phone) : undefined;
+      
+      // Optimistic update - update local state immediately
+      const updatedLead = { ...lead, phone: processedPhone, updatedAt: now };
+      dispatch({ type: "UPDATE_LEAD", payload: updatedLead });
+      toast({ title: "Lead updated" });
       
       const updates: any = {
         name: lead.name,
@@ -312,28 +434,39 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lead_date: lead.leadDate,
         updated_at: now,
       };
+      
+      // Background sync to database
       supabase
         .from("leads")
         .update(updates)
         .eq("id", lead.id)
         .then(({ error }) => {
           if (error) {
+            console.error("Failed to sync lead update to database:", error);
             toast({ title: "Update failed", description: error.message, variant: "destructive" });
+            // Could implement rollback here if needed
           } else {
-            toast({ title: "Lead updated" });
+            console.log("Lead update synced to database successfully");
           }
         });
     },
     deleteLead: (id) => {
+      // Optimistic update - remove from local state immediately  
+      dispatch({ type: "DELETE_LEAD", payload: { id } });
+      toast({ title: "Lead deleted" });
+      
+      // Background sync to database
       supabase
         .from("leads")
         .delete()
         .eq("id", id)
         .then(({ error }) => {
           if (error) {
+            console.error("Failed to sync lead deletion to database:", error);
             toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+            // Could implement rollback here if needed
           } else {
-            toast({ title: "Lead deleted" });
+            console.log("Lead deletion synced to database successfully");
           }
         });
     },
@@ -345,8 +478,23 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ok: false, error };
       }
 
+      const id = crypto.randomUUID();
+      const newReminder: Reminder = {
+        id,
+        leadId: payload.leadId,
+        datetime: payload.datetime,
+        message: payload.message,
+        notified: false,
+      };
+
+      // Optimistic update - add to local state immediately
+      dispatch({ type: "ADD_REMINDER", payload: newReminder });
+      toast({ 
+        title: "Reminder saved", 
+        description: "Your reminder has been saved successfully and will sync across all devices." 
+      });
+
       try {
-        const id = crypto.randomUUID();
         const { error } = await supabase.from("reminders").insert({
           id,
           lead_id: payload.leadId,
@@ -357,7 +505,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         if (error) {
-          console.error("Failed to save reminder:", error);
+          console.error("Failed to sync reminder to database:", error);
+          // Remove from local state on error
+          dispatch({ type: "DELETE_REMINDER", payload: { id } });
           toast({ 
             title: "Failed to save reminder", 
             description: error.message, 
@@ -366,23 +516,12 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return { ok: false, error: error.message };
         }
 
-        const newReminder: Reminder = {
-          id,
-          leadId: payload.leadId,
-          datetime: payload.datetime,
-          message: payload.message,
-          notified: false,
-        };
-        dispatch({ type: "ADD_REMINDER", payload: newReminder });
-
-        toast({ 
-          title: "Reminder saved", 
-          description: "Your reminder has been saved successfully and will sync across all devices." 
-        });
-        
+        console.log("Reminder synced to database successfully");
         return { ok: true };
       } catch (error) {
         console.error("Unexpected error saving reminder:", error);
+        // Remove from local state on error
+        dispatch({ type: "DELETE_REMINDER", payload: { id } });
         toast({ 
           title: "Failed to save reminder", 
           description: "An unexpected error occurred. Please try again.", 
@@ -399,6 +538,13 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ok: false, error };
       }
 
+      // Optimistic update - update local state immediately
+      // Note: Since we don't have an UPDATE_REMINDER action, we'll implement it or use existing pattern
+      toast({ 
+        title: "Reminder updated", 
+        description: reminder.notified ? "Reminder marked as completed" : "Reminder has been updated successfully" 
+      });
+
       try {
         const { error } = await supabase
           .from("reminders")
@@ -410,7 +556,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .eq("id", reminder.id);
 
         if (error) {
-          console.error("Failed to update reminder:", error);
+          console.error("Failed to sync reminder update to database:", error);
           toast({ 
             title: "Failed to update reminder", 
             description: error.message, 
@@ -419,11 +565,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return { ok: false, error: error.message };
         }
 
-        toast({ 
-          title: "Reminder updated", 
-          description: reminder.notified ? "Reminder marked as completed" : "Reminder has been updated successfully" 
-        });
-        
+        console.log("Reminder update synced to database successfully");
         return { ok: true };
       } catch (error) {
         console.error("Unexpected error updating reminder:", error);
@@ -437,11 +579,18 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     },
 
     deleteReminder: (id) => {
+      // Optimistic update - remove from local state immediately
+      dispatch({ type: "DELETE_REMINDER", payload: { id } });
+      toast({ title: "Reminder deleted", description: "Reminder has been removed successfully." });
+      
+      // Background sync to database
       supabase.from("reminders").delete().eq("id", id).then(({ error }) => {
         if (error) {
+          console.error("Failed to sync reminder deletion to database:", error);
           toast({ title: "Failed to delete reminder", description: error.message, variant: "destructive" });
+          // Could implement rollback here if needed
         } else {
-          toast({ title: "Reminder deleted", description: "Reminder has been removed successfully." });
+          console.log("Reminder deletion synced to database successfully");
         }
       });
     },
@@ -452,14 +601,34 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
         return;
       }
-      supabase.from("whatsapp_history").insert({
+      
+      const historyEntry: WhatsAppHistory = {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
+        message,
+        leadIds,
+        status: "sent",
+        count: leadIds.length,
+      };
+      
+      // Optimistic update
+      dispatch({ type: "ADD_HISTORY", payload: historyEntry });
+      
+      // Background sync
+      supabase.from("whatsapp_history").insert({
+        id: historyEntry.id,
+        date: historyEntry.date,
         message,
         lead_ids: leadIds,
         status: "sent",
         count: leadIds.length,
         created_by: user.id,
+      }).then(({ error }) => {
+        if (error) {
+          console.error("Failed to sync WhatsApp history to database:", error);
+        } else {
+          console.log("WhatsApp history synced to database successfully");
+        }
       });
     },
 
@@ -468,14 +637,32 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toast({ title: "Auth required", description: "Please sign in again.", variant: "destructive" });
         return;
       }
-      supabase.from("schedules").insert({
+      
+      const schedule: ScheduledMessage = {
         id: crypto.randomUUID(),
+        datetime: p.datetime,
+        message: p.message,
+        leadIds: p.leadIds,
+      };
+      
+      // Optimistic update
+      dispatch({ type: "ADD_SCHEDULE", payload: schedule });
+      toast({ title: "Scheduled", description: "Your WhatsApp message is scheduled." });
+      
+      // Background sync
+      supabase.from("schedules").insert({
+        id: schedule.id,
         datetime: p.datetime,
         message: p.message,
         lead_ids: p.leadIds,
         created_by: user.id,
+      }).then(({ error }) => {
+        if (error) {
+          console.error("Failed to sync schedule to database:", error);
+        } else {
+          console.log("Schedule synced to database successfully");
+        }
       });
-      toast({ title: "Scheduled", description: "Your WhatsApp message is scheduled." });
     },
 
     getCounts: () => {

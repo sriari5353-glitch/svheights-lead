@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
 import RemindersSection from "@/components/RemindersSection";
+import { LeadForm } from "@/components/LeadForm";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -191,126 +192,6 @@ function CalendarNotesCard() {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-const defaultLead: Omit<Lead, "id" | "createdAt" | "updatedAt"> = {
-  name: "",
-  phone: "",
-  source: "Walk-in",
-  sourceDetails: "",
-  status: "New Lead",
-  notes: "",
-  feedback: "",
-};
-
-function LeadForm({ open, setOpen, edit }: { open: boolean; setOpen: (v: boolean) => void; edit?: Lead }) {
-  const { addLead, updateLead } = useCRM();
-  const initial = edit
-    ? (({ name, phone, source, sourceDetails, status, notes, feedback }) => ({ name, phone, source, sourceDetails, status, notes, feedback }))(edit)
-    : defaultLead;
-  const [data, setData] = useState<Omit<Lead, "id" | "createdAt" | "updatedAt">>(initial);
-
-  useEffect(() => {
-    if (edit) {
-      setData((({ name, phone, source, sourceDetails, status, notes, feedback }) => ({ name, phone, source, sourceDetails, status, notes, feedback }))(edit));
-    } else {
-      setData(defaultLead);
-    }
-  }, [edit, open]);
-
-  const onSubmit = () => {
-    if (!data.name.trim() || !data.phone.trim()) {
-      toast({ title: "Name and phone are required", variant: "destructive" });
-      return;
-    }
-    if (edit) {
-      updateLead({ ...edit, ...data });
-      setOpen(false);
-    } else {
-      const res = addLead(data);
-      if (res.ok) setOpen(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>{edit ? "Edit Lead" : "Add Lead"}</DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={data.name} onChange={(e) => setData((s) => ({ ...s, name: e.target.value }))} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" inputMode="numeric" value={data.phone} onChange={(e) => setData((s) => ({ ...s, phone: e.target.value }))} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Source of Lead</Label>
-              <Select value={data.source} onValueChange={(v: LeadSource) => setData((s) => ({ ...s, source: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SOURCE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input placeholder="Extra details (optional)" value={data.sourceDetails || ""} onChange={(e) => setData((s) => ({ ...s, sourceDetails: e.target.value }))} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Lead Status</Label>
-              <Select value={data.status} onValueChange={(v: LeadStatus) => setData((s) => ({ ...s, status: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Feedback</Label>
-              <Select value={data.feedback} onValueChange={(v: Feedback) => setData((s) => ({ ...s, feedback: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select feedback" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FEEDBACK_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Notes</Label>
-              <Textarea value={data.notes} onChange={(e) => setData((s) => ({ ...s, notes: e.target.value }))} rows={4} />
-            </div>
-          </div>
-        </ScrollArea>
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button variant="hero" onClick={onSubmit}>
-            {edit ? "Save changes" : "Add lead"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -603,7 +484,31 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
             <DialogTrigger asChild>
               <Button variant="hero" className="shrink-0"><Plus className="h-4 w-4" /> Add Lead</Button>
             </DialogTrigger>
-            <LeadForm open={open} setOpen={setOpen} edit={editing} />
+            <DialogContent className="sm:max-w-xl max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>{editing ? "Edit Lead" : "Add Lead"}</DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh] pr-4">
+                <LeadForm
+                  onSuccess={() => {
+                    setOpen(false);
+                    setEditing(undefined);
+                  }}
+                  initialData={editing ? {
+                    name: editing.name,
+                    phone: editing.phone,
+                    source: editing.source,
+                    sourceDetails: editing.sourceDetails,
+                    status: editing.status,
+                    notes: editing.notes,
+                    feedback: editing.feedback,
+                    leadDate: editing.leadDate,
+                  } : undefined}
+                  isEditing={!!editing}
+                  leadId={editing?.id}
+                />
+              </ScrollArea>
+            </DialogContent>
           </Dialog>
         </div>
       </div>
@@ -636,6 +541,12 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                       <div>
                         <div>{l.name}</div>
                         <div className="text-sm text-muted-foreground">{l.phone}</div>
+                        {l.leadDate && (
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            {format(new Date(l.leadDate), "PPP")}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="min-w-[200px] md:min-w-[300px]">
@@ -788,7 +699,14 @@ function Page() {
                 <DialogTrigger asChild>
                   <Button variant="hero"><Plus className="h-4 w-4" /> Add Lead</Button>
                 </DialogTrigger>
-                <LeadForm open={open} setOpen={setOpen} />
+                <DialogContent className="sm:max-w-xl max-h-[90vh]">
+                  <DialogHeader>
+                    <DialogTitle>Add Lead</DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[60vh] pr-4">
+                    <LeadForm onSuccess={() => setOpen(false)} />
+                  </ScrollArea>
+                </DialogContent>
               </Dialog>
               <LogoutButton />
             </div>

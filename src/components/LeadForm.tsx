@@ -224,10 +224,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({
           onValueChange={(value: Feedback) => setFormData(prev => ({ ...prev, feedback: value }))}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select feedback" />
+            <SelectValue placeholder="Select feedback (optional)" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No feedback</SelectItem>
             <SelectItem value="Prospect">Prospect</SelectItem>
             <SelectItem value="Follow-up">Follow-up</SelectItem>
             <SelectItem value="Visited">Visited</SelectItem>

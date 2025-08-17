@@ -5,10 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PhoneInput } from '@/components/PhoneInput';
 import { useCRM } from '@/context/CRMContext';
 import type { LeadSource, LeadStatus, Feedback } from '@/types/crm';
 import { isValidIndianMobile } from '@/utils/phoneUtils';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface LeadFormProps {
   onSuccess?: () => void;
@@ -20,6 +25,7 @@ interface LeadFormProps {
     status: LeadStatus;
     notes: string;
     feedback: Feedback;
+    leadDate?: string;
   };
   isEditing?: boolean;
   leadId?: string;
@@ -43,6 +49,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({
     feedback: initialData?.feedback || '' as Feedback,
   });
 
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    initialData?.leadDate ? new Date(initialData.leadDate) : undefined
+  );
   const [phoneError, setPhoneError] = useState('');
 
   const handlePhoneChange = (phone: string) => {
@@ -72,13 +81,18 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       return;
     }
 
+    const leadData = {
+      ...formData,
+      leadDate: selectedDate ? selectedDate.toISOString() : undefined,
+    };
+
     if (isEditing && leadId) {
       updateLead({
         id: leadId,
-        ...formData,
+        ...leadData,
       });
     } else {
-      const result = addLead(formData);
+      const result = addLead(leadData);
       if (!result.ok) {
         return;
       }
@@ -95,6 +109,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         notes: '',
         feedback: '',
       });
+      setSelectedDate(undefined);
     }
     
     onSuccess?.();
@@ -123,6 +138,33 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         {phoneError && (
           <p className="text-sm text-red-600 mt-1">{phoneError}</p>
         )}
+      </div>
+
+      <div>
+        <Label>Lead Date (Optional)</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, "PPP") : "Select date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div>

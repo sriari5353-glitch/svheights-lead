@@ -60,6 +60,12 @@ const Leads = () => {
                     <Phone className="h-4 w-4" />
                     {lead.phone}
                   </div>
+                  {lead.leadDate && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(lead.leadDate).toLocaleDateString()}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={`${getStatusColor(lead.status)} text-white`}>
@@ -150,6 +156,7 @@ const Leads = () => {
                 status: editingLead.status,
                 notes: editingLead.notes,
                 feedback: editingLead.feedback,
+                leadDate: editingLead.leadDate,
               }}
               isEditing={true}
               leadId={editingLead.id}

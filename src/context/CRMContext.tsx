@@ -17,12 +17,38 @@ const initialState: CRMState = {
 function reducer(state: CRMState, action: CRMAction): CRMState {
   switch (action.type) {
     case "LOAD":
-      return action.payload;
+      // Sort leads by leadDate (newest first), then by createdAt
+      const sortedLeads = [...action.payload.leads].sort((a, b) => {
+        if (a.leadDate && b.leadDate) {
+          return new Date(b.leadDate).getTime() - new Date(a.leadDate).getTime();
+        }
+        if (a.leadDate && !b.leadDate) return -1;
+        if (!a.leadDate && b.leadDate) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      return { ...action.payload, leads: sortedLeads };
     case "ADD_LEAD":
-      return { ...state, leads: [action.payload, ...state.leads] };
+      const newLeads = [action.payload, ...state.leads].sort((a, b) => {
+        if (a.leadDate && b.leadDate) {
+          return new Date(b.leadDate).getTime() - new Date(a.leadDate).getTime();
+        }
+        if (a.leadDate && !b.leadDate) return -1;
+        if (!a.leadDate && b.leadDate) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      return { ...state, leads: newLeads };
     case "UPDATE_LEAD": {
       const leads = state.leads.map((l) => (l.id === action.payload.id ? { ...l, ...action.payload, updatedAt: new Date().toISOString() } : l));
-      return { ...state, leads };
+      // Re-sort after update
+      const sortedUpdatedLeads = [...leads].sort((a, b) => {
+        if (a.leadDate && b.leadDate) {
+          return new Date(b.leadDate).getTime() - new Date(a.leadDate).getTime();
+        }
+        if (a.leadDate && !b.leadDate) return -1;
+        if (!a.leadDate && b.leadDate) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      return { ...state, leads: sortedUpdatedLeads };
     }
     case "DELETE_LEAD": {
       const leads = state.leads.filter((l) => l.id !== action.payload.id);
@@ -123,6 +149,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: r.status,
       notes: r.notes ?? "",
       feedback: r.feedback ?? "",
+      leadDate: r.lead_date ?? "",
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     });
@@ -249,12 +276,13 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .insert({
           id,
           name: payload.name,
-          phone: processedPhone, // Save processed phone with +91
+          phone: processedPhone,
           source: payload.source,
           source_details: payload.sourceDetails,
           status: payload.status,
           notes: payload.notes,
           feedback: payload.feedback,
+          lead_date: payload.leadDate,
           created_at: now,
           updated_at: now,
           created_by: user.id,
@@ -281,6 +309,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: lead.status,
         notes: lead.notes,
         feedback: lead.feedback,
+        lead_date: lead.leadDate,
         updated_at: now,
       };
       supabase

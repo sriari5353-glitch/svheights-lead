@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -234,70 +235,72 @@ function LeadForm({ open, setOpen, edit }: { open: boolean; setOpen: (v: boolean
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{edit ? "Edit Lead" : "Add Lead"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" value={data.name} onChange={(e) => setData((s) => ({ ...s, name: e.target.value }))} />
+        <ScrollArea className="max-h-[60vh] pr-4">
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={data.name} onChange={(e) => setData((s) => ({ ...s, name: e.target.value }))} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input id="phone" inputMode="numeric" value={data.phone} onChange={(e) => setData((s) => ({ ...s, phone: e.target.value }))} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Source of Lead</Label>
+              <Select value={data.source} onValueChange={(v: LeadSource) => setData((s) => ({ ...s, source: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input placeholder="Extra details (optional)" value={data.sourceDetails || ""} onChange={(e) => setData((s) => ({ ...s, sourceDetails: e.target.value }))} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Lead Status</Label>
+              <Select value={data.status} onValueChange={(v: LeadStatus) => setData((s) => ({ ...s, status: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Feedback</Label>
+              <Select value={data.feedback} onValueChange={(v: Feedback) => setData((s) => ({ ...s, feedback: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select feedback" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FEEDBACK_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Notes</Label>
+              <Textarea value={data.notes} onChange={(e) => setData((s) => ({ ...s, notes: e.target.value }))} rows={4} />
+            </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" inputMode="numeric" value={data.phone} onChange={(e) => setData((s) => ({ ...s, phone: e.target.value }))} />
-          </div>
-          <div className="grid gap-2">
-            <Label>Source of Lead</Label>
-            <Select value={data.source} onValueChange={(v: LeadSource) => setData((s) => ({ ...s, source: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select source" />
-              </SelectTrigger>
-              <SelectContent>
-                {SOURCE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {opt}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input placeholder="Extra details (optional)" value={data.sourceDetails || ""} onChange={(e) => setData((s) => ({ ...s, sourceDetails: e.target.value }))} />
-          </div>
-          <div className="grid gap-2">
-            <Label>Lead Status</Label>
-            <Select value={data.status} onValueChange={(v: LeadStatus) => setData((s) => ({ ...s, status: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {opt}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Feedback</Label>
-            <Select value={data.feedback} onValueChange={(v: Feedback) => setData((s) => ({ ...s, feedback: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select feedback" />
-              </SelectTrigger>
-              <SelectContent>
-                {FEEDBACK_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {opt}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label>Notes</Label>
-            <Textarea value={data.notes} onChange={(e) => setData((s) => ({ ...s, notes: e.target.value }))} rows={4} />
-          </div>
-        </div>
+        </ScrollArea>
         <DialogFooter>
           <Button variant="secondary" onClick={() => setOpen(false)}>
             Cancel

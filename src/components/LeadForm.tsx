@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,17 +184,15 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         </Select>
       </div>
 
-      {formData.source === 'Other' && (
-        <div>
-          <Label htmlFor="sourceDetails">Source Details</Label>
-          <Input
-            id="sourceDetails"
-            value={formData.sourceDetails}
-            onChange={(e) => setFormData(prev => ({ ...prev, sourceDetails: e.target.value }))}
-            placeholder="Specify other source"
-          />
-        </div>
-      )}
+      <div>
+        <Label htmlFor="sourceDetails">Extra Notes (Source Details)</Label>
+        <Input
+          id="sourceDetails"
+          value={formData.sourceDetails}
+          onChange={(e) => setFormData(prev => ({ ...prev, sourceDetails: e.target.value }))}
+          placeholder="Add additional information about the source"
+        />
+      </div>
 
       <div>
         <Label htmlFor="status">Status</Label>

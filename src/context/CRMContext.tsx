@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import type { Lead, Reminder, ScheduledMessage, WhatsAppHistory, CRMState, CRMAction } from "@/types/crm";
@@ -413,25 +412,40 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       return { ok: true };
     },
-    updateLead: (lead) => {
+    updateLead: (leadUpdate) => {
       const now = new Date().toISOString();
       // Process phone number if it's being updated
-      const processedPhone = lead.phone ? addIndiaCode(lead.phone) : undefined;
+      const processedPhone = leadUpdate.phone ? addIndiaCode(leadUpdate.phone) : undefined;
+      
+      // Find the existing lead to get all required properties
+      const existingLead = state.leads.find(l => l.id === leadUpdate.id);
+      if (!existingLead) {
+        console.error("Lead not found for update:", leadUpdate.id);
+        toast({ title: "Update failed", description: "Lead not found", variant: "destructive" });
+        return;
+      }
+      
+      // Create complete Lead object by merging existing lead with updates
+      const updatedLead: Lead = {
+        ...existingLead,
+        ...leadUpdate,
+        phone: processedPhone || existingLead.phone,
+        updatedAt: now,
+      };
       
       // Optimistic update - update local state immediately
-      const updatedLead = { ...lead, phone: processedPhone, updatedAt: now };
       dispatch({ type: "UPDATE_LEAD", payload: updatedLead });
       toast({ title: "Lead updated" });
       
       const updates: any = {
-        name: lead.name,
-        phone: processedPhone,
-        source: lead.source,
-        source_details: lead.sourceDetails,
-        status: lead.status,
-        notes: lead.notes,
-        feedback: lead.feedback,
-        lead_date: lead.leadDate,
+        name: leadUpdate.name || existingLead.name,
+        phone: processedPhone || existingLead.phone,
+        source: leadUpdate.source || existingLead.source,
+        source_details: leadUpdate.sourceDetails !== undefined ? leadUpdate.sourceDetails : existingLead.sourceDetails,
+        status: leadUpdate.status || existingLead.status,
+        notes: leadUpdate.notes !== undefined ? leadUpdate.notes : existingLead.notes,
+        feedback: leadUpdate.feedback !== undefined ? leadUpdate.feedback : existingLead.feedback,
+        lead_date: leadUpdate.leadDate !== undefined ? leadUpdate.leadDate : existingLead.leadDate,
         updated_at: now,
       };
       
@@ -439,7 +453,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       supabase
         .from("leads")
         .update(updates)
-        .eq("id", lead.id)
+        .eq("id", leadUpdate.id)
         .then(({ error }) => {
           if (error) {
             console.error("Failed to sync lead update to database:", error);

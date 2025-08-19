@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,7 +12,6 @@ import { toast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useCRM } from "@/context/CRMContext";
-import type { Lead, LeadSource, LeadStatus, Feedback } from "@/types/crm";
 
 interface ParsedRow {
   [key: string]: any;
@@ -20,20 +20,8 @@ interface ParsedRow {
 interface MappedLead {
   name: string;
   phone: string;
-  source: LeadSource;
-  sourceDetails: string;
-  status: LeadStatus;
-  notes: string;
-  feedback: Feedback | "";
   leadDate: string;
-  bhkType?: string;
-  instagram?: string;
-  facebook?: string;
 }
-
-const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
-const STATUS_OPTIONS: LeadStatus[] = ["New Lead", "Prospect", "Negotiation", "Hot Lead", "Closed", "Lost"];
-const FEEDBACK_OPTIONS: Feedback[] = ["Prospect", "Follow-up", "Visited", "Rejected"];
 
 const DataUpload = () => {
   const { addLead } = useCRM();
@@ -105,15 +93,7 @@ const DataUpload = () => {
     const mapped: MappedLead[] = parsedData.map(row => ({
       name: row[columnMapping.name] || '',
       phone: row[columnMapping.phone] || '',
-      source: (row[columnMapping.source] as LeadSource) || "Other",
-      sourceDetails: row[columnMapping.sourceDetails] || '',
-      status: (row[columnMapping.status] as LeadStatus) || "New Lead",
-      notes: row[columnMapping.notes] || '',
-      feedback: (row[columnMapping.feedback] as Feedback) || "",
       leadDate: row[columnMapping.leadDate] || '',
-      bhkType: row[columnMapping.bhkType] || '',
-      instagram: row[columnMapping.instagram] || '',
-      facebook: row[columnMapping.facebook] || '',
     }));
 
     setMappedLeads(mapped);
@@ -132,22 +112,14 @@ const DataUpload = () => {
     let errorCount = 0;
 
     selectedLeads.forEach((lead) => {
-      // Combine additional info into notes
-      const additionalInfo = [];
-      if (lead.bhkType) additionalInfo.push(`BHK: ${lead.bhkType}`);
-      if (lead.instagram) additionalInfo.push(`IG: ${lead.instagram}`);
-      if (lead.facebook) additionalInfo.push(`FB: ${lead.facebook}`);
-      
-      const combinedNotes = [lead.notes, ...additionalInfo].filter(Boolean).join('\n');
-
       const result = addLead({
         name: lead.name,
         phone: lead.phone,
-        source: lead.source,
-        sourceDetails: lead.sourceDetails,
-        status: lead.status,
-        notes: combinedNotes,
-        feedback: lead.feedback || undefined,
+        source: "Walk-in",
+        sourceDetails: "",
+        status: "New Lead",
+        notes: "",
+        feedback: "",
         leadDate: lead.leadDate,
       });
 
@@ -177,15 +149,7 @@ const DataUpload = () => {
       {
         Name: "John Doe",
         Phone: "9876543210",
-        Source: "Social Media",
-        "Source Details": "Facebook Ad",
-        Status: "New Lead",
-        Notes: "Interested in 2BHK",
-        Feedback: "Prospect",
-        "Lead Date": "2024-01-15",
-        "BHK Type": "2BHK",
-        Instagram: "@johndoe",
-        Facebook: "john.doe.123"
+        "Lead Date": "2024-01-15"
       }
     ];
 
@@ -211,9 +175,9 @@ const DataUpload = () => {
           Upload Data
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Import Leads from File</DialogTitle>
+          <DialogTitle>Import Basic Lead Data</DialogTitle>
         </DialogHeader>
         
         <ScrollArea className="max-h-[80vh] pr-4">
@@ -224,7 +188,7 @@ const DataUpload = () => {
                 <div>
                   <h3 className="text-lg font-medium">Upload your data file</h3>
                   <p className="text-sm text-muted-foreground">
-                    Supported formats: Excel (.xlsx, .xls), CSV (.csv)
+                    Upload Name, Phone, and Date data. You can edit and add more details later.
                   </p>
                 </div>
                 
@@ -247,19 +211,14 @@ const DataUpload = () => {
 
               <div className="border rounded-lg p-4 bg-muted/50">
                 <h4 className="font-medium mb-2">Expected columns:</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground">
                   <div>• Name (required)</div>
                   <div>• Phone (required)</div>
-                  <div>• Source</div>
-                  <div>• Source Details</div>
-                  <div>• Status</div>
-                  <div>• Notes</div>
-                  <div>• Feedback</div>
-                  <div>• Lead Date</div>
-                  <div>• BHK Type</div>
-                  <div>• Instagram</div>
-                  <div>• Facebook</div>
+                  <div>• Lead Date (optional)</div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Other details like source, status, notes can be added later through editing.
+                </p>
               </div>
             </div>
           )}
@@ -271,172 +230,48 @@ const DataUpload = () => {
                 <Button variant="outline" onClick={resetUpload}>Start Over</Button>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <Label>Name Column *</Label>
-                    <Select value={columnMapping.name} onValueChange={(v) => setColumnMapping({...columnMapping, name: v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Name" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Phone Column *</Label>
-                    <Select value={columnMapping.phone} onValueChange={(v) => setColumnMapping({...columnMapping, phone: v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Phone" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Source Column</Label>
-                    <Select value={columnMapping.source || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, source: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Source Details Column</Label>
-                    <Select value={columnMapping.sourceDetails || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, sourceDetails: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Source Details" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Status Column</Label>
-                    <Select value={columnMapping.status || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, status: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Notes Column</Label>
-                    <Select value={columnMapping.notes || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, notes: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Notes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <div className="grid grid-cols-1 gap-4 max-w-md">
+                <div>
+                  <Label>Name Column *</Label>
+                  <Select value={columnMapping.name} onValueChange={(v) => setColumnMapping({...columnMapping, name: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select column for Name" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableColumns().map(col => (
+                        <SelectItem key={col} value={col}>{col}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <Label>Feedback Column</Label>
-                    <Select value={columnMapping.feedback || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, feedback: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Feedback" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label>Phone Column *</Label>
+                  <Select value={columnMapping.phone} onValueChange={(v) => setColumnMapping({...columnMapping, phone: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select column for Phone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableColumns().map(col => (
+                        <SelectItem key={col} value={col}>{col}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div>
-                    <Label>Lead Date Column</Label>
-                    <Select value={columnMapping.leadDate || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, leadDate: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Lead Date" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>BHK Type Column</Label>
-                    <Select value={columnMapping.bhkType || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, bhkType: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for BHK Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Instagram Column</Label>
-                    <Select value={columnMapping.instagram || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, instagram: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Instagram" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Facebook Column</Label>
-                    <Select value={columnMapping.facebook || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, facebook: v === "none" ? "" : v})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select column for Facebook" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {getAvailableColumns().map(col => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label>Lead Date Column (Optional)</Label>
+                  <Select value={columnMapping.leadDate || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, leadDate: v === "none" ? "" : v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select column for Lead Date" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {getAvailableColumns().map(col => (
+                        <SelectItem key={col} value={col}>{col}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -478,12 +313,7 @@ const DataUpload = () => {
                       <TableHead className="w-10"></TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Phone</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Notes</TableHead>
-                      <TableHead>BHK</TableHead>
-                      <TableHead>IG</TableHead>
-                      <TableHead>FB</TableHead>
+                      <TableHead>Lead Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -499,16 +329,18 @@ const DataUpload = () => {
                         </TableCell>
                         <TableCell className="font-medium">{lead.name}</TableCell>
                         <TableCell>{lead.phone}</TableCell>
-                        <TableCell>{lead.source}</TableCell>
-                        <TableCell>{lead.status}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{lead.notes}</TableCell>
-                        <TableCell>{lead.bhkType}</TableCell>
-                        <TableCell>{lead.instagram}</TableCell>
-                        <TableCell>{lead.facebook}</TableCell>
+                        <TableCell>{lead.leadDate || "Not set"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> These leads will be imported with default values (Walk-in source, New Lead status). 
+                  You can edit each lead individually to add more details like source, notes, feedback, etc.
+                </p>
               </div>
 
               <div className="flex justify-end gap-2">

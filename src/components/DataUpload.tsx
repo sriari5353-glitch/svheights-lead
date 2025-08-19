@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -304,12 +303,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>Source Column</Label>
-                    <Select value={columnMapping.source} onValueChange={(v) => setColumnMapping({...columnMapping, source: v})}>
+                    <Select value={columnMapping.source || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, source: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Source" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -319,12 +318,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>Source Details Column</Label>
-                    <Select value={columnMapping.sourceDetails} onValueChange={(v) => setColumnMapping({...columnMapping, sourceDetails: v})}>
+                    <Select value={columnMapping.sourceDetails || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, sourceDetails: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Source Details" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -334,12 +333,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>Status Column</Label>
-                    <Select value={columnMapping.status} onValueChange={(v) => setColumnMapping({...columnMapping, status: v})}>
+                    <Select value={columnMapping.status || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, status: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -349,12 +348,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>Notes Column</Label>
-                    <Select value={columnMapping.notes} onValueChange={(v) => setColumnMapping({...columnMapping, notes: v})}>
+                    <Select value={columnMapping.notes || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, notes: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Notes" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -366,12 +365,12 @@ const DataUpload = () => {
                 <div className="space-y-3">
                   <div>
                     <Label>Feedback Column</Label>
-                    <Select value={columnMapping.feedback} onValueChange={(v) => setColumnMapping({...columnMapping, feedback: v})}>
+                    <Select value={columnMapping.feedback || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, feedback: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Feedback" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -381,12 +380,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>Lead Date Column</Label>
-                    <Select value={columnMapping.leadDate} onValueChange={(v) => setColumnMapping({...columnMapping, leadDate: v})}>
+                    <Select value={columnMapping.leadDate || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, leadDate: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Lead Date" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -396,12 +395,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>BHK Type Column</Label>
-                    <Select value={columnMapping.bhkType} onValueChange={(v) => setColumnMapping({...columnMapping, bhkType: v})}>
+                    <Select value={columnMapping.bhkType || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, bhkType: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for BHK Type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -411,12 +410,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>Instagram Column</Label>
-                    <Select value={columnMapping.instagram} onValueChange={(v) => setColumnMapping({...columnMapping, instagram: v})}>
+                    <Select value={columnMapping.instagram || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, instagram: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Instagram" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
@@ -426,12 +425,12 @@ const DataUpload = () => {
 
                   <div>
                     <Label>Facebook Column</Label>
-                    <Select value={columnMapping.facebook} onValueChange={(v) => setColumnMapping({...columnMapping, facebook: v})}>
+                    <Select value={columnMapping.facebook || "none"} onValueChange={(v) => setColumnMapping({...columnMapping, facebook: v === "none" ? "" : v})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select column for Facebook" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {getAvailableColumns().map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}

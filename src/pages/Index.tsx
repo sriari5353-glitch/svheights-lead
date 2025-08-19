@@ -23,6 +23,7 @@ import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
 import RemindersSection from "@/components/RemindersSection";
 import { LeadForm } from "@/components/LeadForm";
+import DataUpload from "@/components/DataUpload";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -480,9 +481,10 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
           >
             <Edit className="h-4 w-4" /> {isEditMode ? "Done" : "Edit"}
           </Button>
+          <DataUpload />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="hero" className="shrink-0"><Plus className="h-4 w-4" /> Add Lead</Button>
+              <Button variant="outline" className="shrink-0"><Plus className="h-4 w-4" /> Add Lead</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-xl max-h-[90vh]">
               <DialogHeader>
@@ -695,19 +697,7 @@ function Page() {
               <p className="text-primary-foreground/90 mt-1">Track leads, follow-ups, and WhatsApp campaigns with ease.</p>
             </div>
             <div className="flex items-center gap-2">
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="hero"><Plus className="h-4 w-4" /> Add Lead</Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-xl max-h-[90vh]">
-                  <DialogHeader>
-                    <DialogTitle>Add Lead</DialogTitle>
-                  </DialogHeader>
-                  <ScrollArea className="max-h-[60vh] pr-4">
-                    <LeadForm onSuccess={() => setOpen(false)} />
-                  </ScrollArea>
-                </DialogContent>
-              </Dialog>
+              <DataUpload />
               <LogoutButton />
             </div>
           </div>

@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -474,17 +474,9 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
         </div>
 
         <div className="flex items-center gap-2">
-          <Button 
-            variant={isEditMode ? "default" : "outline"} 
-            onClick={() => setIsEditMode(!isEditMode)}
-            className="shrink-0"
-          >
-            <Edit className="h-4 w-4" /> {isEditMode ? "Done" : "Edit"}
-          </Button>
-          <DataUpload />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="shrink-0"><Plus className="h-4 w-4" /> Add Lead</Button>
+              <Button variant="outline" className="shrink-0"><UserPlus className="h-4 w-4" /> Add Lead</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-xl max-h-[90vh]">
               <DialogHeader>
@@ -512,6 +504,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
               </ScrollArea>
             </DialogContent>
           </Dialog>
+          <DataUpload />
         </div>
       </div>
 

@@ -24,6 +24,7 @@ import Diary from "@/components/Diary";
 import RemindersSection from "@/components/RemindersSection";
 import { LeadForm } from "@/components/LeadForm";
 import DataUpload from "@/components/DataUpload";
+import { supabase } from "@/integrations/supabase/client";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
@@ -208,6 +209,7 @@ function NotesCalendarDialog({
   onSave: (notes: string) => void; 
 }) {
   const { addReminder } = useCRM();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [notes, setNotes] = useState(currentNotes);
@@ -234,30 +236,70 @@ function NotesCalendarDialog({
   };
 
   const handleSaveToDiary = async () => {
-    if (!selectedDate) return;
+    if (!selectedDate || !user) {
+      toast({ 
+        title: "Error", 
+        description: "Please select a date and ensure you are logged in", 
+        variant: "destructive" 
+      });
+      return;
+    }
     
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const diaryNote = `Follow-up with ${leadName} - ${notes}`;
+    const diaryNote = `Follow-up with ${leadName}:\n${notes}`;
     
     try {
-      // Get existing diary content for the date
-      const existingDiary = localStorage.getItem("svh_day_diary_v1");
-      const diaryData = existingDiary ? JSON.parse(existingDiary) : {};
-      
-      // Add or append to diary entry
-      if (diaryData[dateStr]) {
-        diaryData[dateStr].text = diaryData[dateStr].text + `\n\n${diaryNote}`;
-      } else {
-        diaryData[dateStr] = { text: diaryNote, updatedAt: new Date().toISOString() };
+      // Get existing diary content for the date from Supabase
+      const { data: existingEntry, error: fetchError } = await supabase
+        .from("diary")
+        .select("content")
+        .eq("user_id", user.id)
+        .eq("date", dateStr)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error("Error fetching existing diary entry:", fetchError);
+        toast({ 
+          title: "Error", 
+          description: "Failed to check existing diary entry", 
+          variant: "destructive" 
+        });
+        return;
       }
-      
-      localStorage.setItem("svh_day_diary_v1", JSON.stringify(diaryData));
-      
+
+      // Prepare the new content
+      const newContent = existingEntry?.content 
+        ? `${existingEntry.content}\n\n${diaryNote}`
+        : diaryNote;
+
+      // Save to Supabase diary table
+      const { error: upsertError } = await supabase
+        .from("diary")
+        .upsert({
+          user_id: user.id,
+          date: dateStr,
+          content: newContent,
+          updated_at: new Date().toISOString(),
+        }, { 
+          onConflict: "user_id,date" 
+        });
+
+      if (upsertError) {
+        console.error("Error saving to diary:", upsertError);
+        toast({ 
+          title: "Error", 
+          description: "Failed to save to diary", 
+          variant: "destructive" 
+        });
+        return;
+      }
+
       toast({ 
         title: "Saved to diary", 
         description: `Entry added to diary for ${format(selectedDate, "PPP")}` 
       });
     } catch (error) {
+      console.error("Unexpected error saving to diary:", error);
       toast({ 
         title: "Error", 
         description: "Failed to save to diary", 
@@ -345,7 +387,7 @@ function NotesCalendarDialog({
                   onClick={handleSaveToDiary}
                   className="flex-1"
                 >
-                  Save to Diary
+                  Save to Diary Now
                 </Button>
               </div>
 

@@ -23,7 +23,7 @@ import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
 import RemindersSection from "@/components/RemindersSection";
 import { LeadForm } from "@/components/LeadForm";
-import DataUpload from "@/components/DataUpload";
+import DataUpload, { DownloadDataButton } from "@/components/DataUpload";
 import { supabase } from "@/integrations/supabase/client";
 
 // Options
@@ -546,7 +546,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
               </ScrollArea>
             </DialogContent>
           </Dialog>
-          <DataUpload />
+          <DownloadDataButton />
         </div>
       </div>
 

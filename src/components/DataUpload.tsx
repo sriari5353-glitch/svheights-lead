@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -166,43 +167,18 @@ const DataUpload = () => {
     setStep('upload');
   };
 
-  const downloadAllData = () => {
-    if (!leads || leads.length === 0) {
-      toast({ title: "No data to download", description: "There are no contacts to export", variant: "destructive" });
-      return;
-    }
-
-    // Export all lead data with complete information
-    const exportData = leads.map(lead => ({
-      Name: lead.name,
-      Phone: lead.phone,
-      Source: lead.source,
-      "Source Details": lead.sourceDetails || '',
-      Status: lead.status,
-      Notes: lead.notes,
-      Feedback: lead.feedback,
-      "Lead Date": lead.leadDate || '',
-      "Created Date": new Date(lead.createdAt).toLocaleDateString(),
-      "Updated Date": new Date(lead.updatedAt).toLocaleDateString()
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "All Contacts Data");
-    XLSX.writeFile(wb, `contacts_export_${new Date().toISOString().split('T')[0]}.xlsx`);
-    
-    toast({ title: "Download successful", description: `${exportData.length} contacts exported` });
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="hero" className="shrink-0" onClick={downloadAllData}>
-          <Download className="h-4 w-4 mr-2" />
-          Download Data
+        <Button variant="hero" className="shrink-0">
+          <Upload className="h-4 w-4 mr-2" />
+          Upload Data
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>Upload Data</DialogTitle>
+        </DialogHeader>
         
         <ScrollArea className="max-h-[80vh] pr-4">
           {step === 'upload' && (
@@ -378,6 +354,46 @@ const DataUpload = () => {
         </ScrollArea>
       </DialogContent>
     </Dialog>
+  );
+};
+
+// Export a separate component for download functionality that can be used in contacts section
+export const DownloadDataButton = () => {
+  const { leads } = useCRM();
+
+  const downloadAllData = () => {
+    if (!leads || leads.length === 0) {
+      toast({ title: "No data to download", description: "There are no contacts to export", variant: "destructive" });
+      return;
+    }
+
+    // Export all lead data with complete information
+    const exportData = leads.map(lead => ({
+      Name: lead.name,
+      Phone: lead.phone,
+      Source: lead.source,
+      "Source Details": lead.sourceDetails || '',
+      Status: lead.status,
+      Notes: lead.notes,
+      Feedback: lead.feedback,
+      "Lead Date": lead.leadDate || '',
+      "Created Date": new Date(lead.createdAt).toLocaleDateString(),
+      "Updated Date": new Date(lead.updatedAt).toLocaleDateString()
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "All Contacts Data");
+    XLSX.writeFile(wb, `contacts_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({ title: "Download successful", description: `${exportData.length} contacts exported` });
+  };
+
+  return (
+    <Button variant="hero" className="shrink-0" onClick={downloadAllData}>
+      <Download className="h-4 w-4 mr-2" />
+      Download Data
+    </Button>
   );
 };
 

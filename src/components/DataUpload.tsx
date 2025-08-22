@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, Download } from "lucide-react";
+import { Upload, FileSpreadsheet, Download, FileText, Globe, File } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useCRM } from "@/context/CRMContext";
 
@@ -23,6 +23,8 @@ interface MappedLead {
   leadDate: string;
 }
 
+type FileType = 'excel' | 'csv' | 'google-sheets' | 'other';
+
 const DataUpload = () => {
   const { addLead, leads } = useCRM();
   const [isOpen, setIsOpen] = useState(false);
@@ -31,10 +33,40 @@ const DataUpload = () => {
   const [selectedRows, setSelectedRows] = useState<Record<number, boolean>>({});
   const [mappedLeads, setMappedLeads] = useState<MappedLead[]>([]);
   const [step, setStep] = useState<'upload' | 'map' | 'review'>('upload');
+  const [selectedFileType, setSelectedFileType] = useState<FileType>('excel');
+
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current.trim());
+    return result;
+  };
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    console.log("File selected:", file.name, file.type, file.size);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -42,37 +74,58 @@ const DataUpload = () => {
         let data: ParsedRow[] = [];
         const result = e.target?.result;
 
-        if (file.name.endsWith('.csv')) {
-          // Handle CSV
+        if (file.name.endsWith('.csv') || file.type === 'text/csv') {
+          console.log("Processing CSV file");
           const text = result as string;
           const lines = text.split('\n').filter(line => line.trim());
-          if (lines.length === 0) return;
+          if (lines.length === 0) {
+            toast({ title: "Empty file", description: "The CSV file appears to be empty", variant: "destructive" });
+            return;
+          }
           
-          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-          data = lines.slice(1).map(line => {
-            const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+          const headers = parseCSVLine(lines[0]).map(h => h.replace(/"/g, ''));
+          console.log("CSV Headers:", headers);
+          
+          data = lines.slice(1).map((line, index) => {
+            const values = parseCSVLine(line).map(v => v.replace(/"/g, ''));
             const row: ParsedRow = {};
-            headers.forEach((header, index) => {
-              row[header] = values[index] || '';
+            headers.forEach((header, headerIndex) => {
+              row[header] = values[headerIndex] || '';
             });
             return row;
-          });
-        } else {
-          // Handle Excel files
+          }).filter(row => Object.values(row).some(value => value && value.toString().trim()));
+          
+        } else if (file.name.match(/\.(xlsx|xls)$/i) || file.type.includes('spreadsheet')) {
+          console.log("Processing Excel file");
           const workbook = XLSX.read(result, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           data = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+        } else {
+          toast({ title: "Unsupported format", description: "Please upload a CSV or Excel file", variant: "destructive" });
+          return;
+        }
+
+        console.log("Parsed data:", data);
+        
+        if (data.length === 0) {
+          toast({ title: "No data found", description: "The file doesn't contain any valid data rows", variant: "destructive" });
+          return;
         }
 
         setParsedData(data);
         setStep('map');
-        toast({ title: "File uploaded", description: `${data.length} rows found` });
+        toast({ title: "File uploaded", description: `${data.length} rows found and ready for mapping` });
       } catch (error) {
-        toast({ title: "Upload failed", description: "Could not parse the file", variant: "destructive" });
+        console.error("File parsing error:", error);
+        toast({ title: "Upload failed", description: "Could not parse the file. Please check the format.", variant: "destructive" });
       }
     };
 
-    if (file.name.endsWith('.csv')) {
+    reader.onerror = () => {
+      toast({ title: "File read error", description: "Could not read the file", variant: "destructive" });
+    };
+
+    if (file.name.endsWith('.csv') || file.type === 'text/csv') {
       reader.readAsText(file);
     } else {
       reader.readAsArrayBuffer(file);
@@ -144,19 +197,42 @@ const DataUpload = () => {
     setIsOpen(false);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = (fileType: FileType) => {
     const template = [
       {
         Name: "John Doe",
         Phone: "9876543210",
         "Lead Date": "2024-01-15"
+      },
+      {
+        Name: "Jane Smith", 
+        Phone: "9123456789",
+        "Lead Date": "2024-01-16"
       }
     ];
 
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Leads Template");
-    XLSX.writeFile(wb, "leads_template.xlsx");
+    if (fileType === 'csv') {
+      // Create CSV content
+      const headers = Object.keys(template[0]);
+      const csvContent = [
+        headers.join(','),
+        ...template.map(row => Object.values(row).map(val => `"${val}"`).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'leads_template.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } else {
+      // Create Excel file
+      const ws = XLSX.utils.json_to_sheet(template);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Leads Template");
+      XLSX.writeFile(wb, "leads_template.xlsx");
+    }
   };
 
   const resetUpload = () => {
@@ -165,6 +241,31 @@ const DataUpload = () => {
     setSelectedRows({});
     setMappedLeads([]);
     setStep('upload');
+  };
+
+  const handleGoogleSheetsImport = () => {
+    toast({ 
+      title: "Google Sheets Import", 
+      description: "To import from Google Sheets, export your sheet as Excel (.xlsx) or CSV and upload it here.", 
+    });
+  };
+
+  const getFileTypeIcon = (type: FileType) => {
+    switch (type) {
+      case 'excel': return <FileSpreadsheet className="h-5 w-5" />;
+      case 'csv': return <FileText className="h-5 w-5" />;
+      case 'google-sheets': return <Globe className="h-5 w-5" />;
+      default: return <File className="h-5 w-5" />;
+    }
+  };
+
+  const getAcceptedFileTypes = () => {
+    switch (selectedFileType) {
+      case 'excel': return '.xlsx,.xls';
+      case 'csv': return '.csv';
+      case 'google-sheets': return '.xlsx,.xls,.csv';
+      default: return '.xlsx,.xls,.csv';
+    }
   };
 
   return (
@@ -177,7 +278,7 @@ const DataUpload = () => {
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Upload Data</DialogTitle>
+          <DialogTitle>Upload Data from Multiple Sources</DialogTitle>
         </DialogHeader>
         
         <ScrollArea className="max-h-[80vh] pr-4">
@@ -186,24 +287,101 @@ const DataUpload = () => {
               <div className="text-center space-y-4">
                 <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground" />
                 <div>
-                  <h3 className="text-lg font-medium">Upload your data file</h3>
+                  <h3 className="text-lg font-medium">Choose your data source</h3>
                   <p className="text-sm text-muted-foreground">
-                    Upload Name, Phone, and Date data. You can edit and add more details later.
+                    Upload Name, Phone, and Date data from various file formats
                   </p>
                 </div>
                 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div 
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      selectedFileType === 'excel' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedFileType('excel')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                      <div className="text-left">
+                        <div className="font-medium">Excel Files</div>
+                        <div className="text-sm text-muted-foreground">.xlsx, .xls</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      selectedFileType === 'csv' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedFileType('csv')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-6 w-6 text-blue-600" />
+                      <div className="text-left">
+                        <div className="font-medium">CSV Files</div>
+                        <div className="text-sm text-muted-foreground">.csv</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      selectedFileType === 'google-sheets' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedFileType('google-sheets')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-6 w-6 text-orange-600" />
+                      <div className="text-left">
+                        <div className="font-medium">Google Sheets</div>
+                        <div className="text-sm text-muted-foreground">Export & upload</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
-                  <Input
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    onChange={handleFileUpload}
-                    className="cursor-pointer"
-                  />
+                  {selectedFileType === 'google-sheets' ? (
+                    <div className="space-y-3">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                        <h4 className="font-medium text-blue-900 mb-2">How to import from Google Sheets:</h4>
+                        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                          <li>Open your Google Sheet</li>
+                          <li>Go to File → Download → Microsoft Excel (.xlsx) or Comma Separated Values (.csv)</li>
+                          <li>Upload the downloaded file using the button below</li>
+                        </ol>
+                      </div>
+                      <Button variant="outline" onClick={handleGoogleSheetsImport} className="w-full">
+                        <Globe className="h-4 w-4 mr-2" />
+                        Learn More About Google Sheets Import
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        {getFileTypeIcon(selectedFileType)}
+                        <span className="text-sm font-medium">
+                          Upload {selectedFileType === 'excel' ? 'Excel' : 'CSV'} File
+                        </span>
+                      </div>
+                      <Input
+                        type="file"
+                        accept={getAcceptedFileTypes()}
+                        onChange={handleFileUpload}
+                        className="cursor-pointer"
+                      />
+                    </>
+                  )}
                   
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={downloadTemplate} className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => downloadTemplate(selectedFileType)} 
+                      className="flex-1"
+                      disabled={selectedFileType === 'google-sheets'}
+                    >
                       <Download className="h-4 w-4 mr-2" />
-                      Download Template
+                      Download {selectedFileType === 'excel' ? 'Excel' : 'CSV'} Template
                     </Button>
                   </div>
                 </div>

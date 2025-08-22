@@ -327,14 +327,58 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [state.reminders, state.schedules]);
 
   const openWhatsAppTabs = (leadIds: string[], message: string) => {
+    console.log("Opening WhatsApp for leads:", leadIds, "with message:", message);
+    
     const leads = state.leads.filter((l) => leadIds.includes(l.id));
+    
+    if (leads.length === 0) {
+      toast({ title: "Error", description: "No valid leads found", variant: "destructive" });
+      return;
+    }
+
+    let successCount = 0;
+    
     leads.forEach((lead, idx) => {
-      const phone = formatPhoneForWhatsApp(lead.phone);
-      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-      const target = idx === 0 ? "_blank" : "_blank";
-      window.open(url, target);
+      try {
+        // Use the utility function to format phone for WhatsApp
+        const phone = formatPhoneForWhatsApp(lead.phone);
+        console.log(`Opening WhatsApp for ${lead.name} (${lead.phone}) -> formatted: ${phone}`);
+        
+        // Construct the WhatsApp Web URL
+        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        console.log("WhatsApp URL:", whatsappUrl);
+        
+        // Open in new tab/window
+        const newWindow = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        
+        if (newWindow) {
+          successCount++;
+          console.log(`WhatsApp opened successfully for ${lead.name}`);
+        } else {
+          console.warn(`Failed to open WhatsApp for ${lead.name} - popup blocked?`);
+          toast({ 
+            title: "Popup blocked", 
+            description: `Please allow popups and try again for ${lead.name}`, 
+            variant: "destructive" 
+          });
+        }
+        
+      } catch (error) {
+        console.error(`Error opening WhatsApp for ${lead.name}:`, error);
+        toast({ 
+          title: "WhatsApp Error", 
+          description: `Failed to open WhatsApp for ${lead.name}`, 
+          variant: "destructive" 
+        });
+      }
     });
-    toast({ title: "WhatsApp", description: `Opened ${leads.length} chat${leads.length !== 1 ? "s" : ""} in new tab(s).` });
+    
+    if (successCount > 0) {
+      toast({ 
+        title: "WhatsApp Opened", 
+        description: `Successfully opened ${successCount} WhatsApp chat${successCount !== 1 ? 's' : ''} in new tab${successCount !== 1 ? 's' : ''}.` 
+      });
+    }
   };
 
   const value: CRMContextValue = useMemo(() => ({

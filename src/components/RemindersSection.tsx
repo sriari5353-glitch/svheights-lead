@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CalendarDays, Clock, CheckCircle, AlertCircle, Loader2, MoreVertical, Calendar, Check } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle, AlertCircle, Loader2, MoreVertical, Calendar, Check, Trash2 } from "lucide-react";
 import { format, formatDistanceToNow, isAfter, isBefore, addHours } from "date-fns";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function RemindersSection() {
   const { reminders, leads, addReminder, deleteReminder, updateReminder } = useCRM();
@@ -25,6 +26,9 @@ export default function RemindersSection() {
   const [rescheduleReminder, setRescheduleReminder] = useState<any>(null);
   const [newDateTime, setNewDateTime] = useState<string>("");
   const [newMessage, setNewMessage] = useState<string>("");
+
+  // Bulk delete state for completed reminders
+  const [selectedCompleted, setSelectedCompleted] = useState<Record<string, boolean>>({});
 
   const { upcoming, overdue, completed } = useMemo(() => {
     const now = new Date();
@@ -105,6 +109,36 @@ export default function RemindersSection() {
     }
   };
 
+  // Bulk delete functions for completed reminders
+  const toggleCompletedSelection = (reminderId: string, checked: boolean) => {
+    setSelectedCompleted(prev => ({
+      ...prev,
+      [reminderId]: checked
+    }));
+  };
+
+  const toggleAllCompleted = (checked: boolean) => {
+    const newSelection: Record<string, boolean> = {};
+    completed.forEach(reminder => {
+      newSelection[reminder.id] = checked;
+    });
+    setSelectedCompleted(newSelection);
+  };
+
+  const deleteSelectedCompleted = async () => {
+    const selectedIds = Object.keys(selectedCompleted).filter(id => selectedCompleted[id]);
+    
+    try {
+      await Promise.all(selectedIds.map(id => deleteReminder(id)));
+      setSelectedCompleted({});
+    } catch (error) {
+      console.error("Failed to delete selected reminders:", error);
+    }
+  };
+
+  const selectedCompletedCount = Object.values(selectedCompleted).filter(Boolean).length;
+  const allCompletedSelected = completed.length > 0 && completed.every(r => selectedCompleted[r.id]);
+
   const getSaveStatusIcon = () => {
     switch (saveStatus) {
       case "saving":
@@ -146,24 +180,32 @@ export default function RemindersSection() {
     }
   };
 
-  const ReminderCard = ({ reminder, showActions = true }: { reminder: any; showActions?: boolean }) => {
+  const ReminderCard = ({ reminder, showActions = true, showCheckbox = false }: { reminder: any; showActions?: boolean; showCheckbox?: boolean }) => {
     const lead = leads.find((l) => l.id === reminder.leadId);
     const status = getReminderStatus(reminder);
     const StatusIcon = status.icon;
 
     return (
       <div className="flex items-center justify-between p-3 rounded-md border">
-        <div className="text-sm flex-1">
-          <div className="font-medium flex items-center gap-2">
-            <StatusIcon className="h-4 w-4" />
-            {lead?.name} • {lead?.phone}
-            <Badge variant={status.variant}>{status.text}</Badge>
+        <div className="flex items-center gap-3 flex-1">
+          {showCheckbox && (
+            <Checkbox
+              checked={selectedCompleted[reminder.id] || false}
+              onCheckedChange={(checked) => toggleCompletedSelection(reminder.id, Boolean(checked))}
+            />
+          )}
+          <div className="text-sm flex-1">
+            <div className="font-medium flex items-center gap-2">
+              <StatusIcon className="h-4 w-4" />
+              {lead?.name} • {lead?.phone}
+              <Badge variant={status.variant}>{status.text}</Badge>
+            </div>
+            <div className="text-muted-foreground mt-1">
+              {format(new Date(reminder.datetime), "PPp")} 
+              <span className="ml-2">({formatDistanceToNow(new Date(reminder.datetime), { addSuffix: true })})</span>
+            </div>
+            {reminder.message && <div className="text-muted-foreground italic mt-1">"{reminder.message}"</div>}
           </div>
-          <div className="text-muted-foreground mt-1">
-            {format(new Date(reminder.datetime), "PPp")} 
-            <span className="ml-2">({formatDistanceToNow(new Date(reminder.datetime), { addSuffix: true })})</span>
-          </div>
-          {reminder.message && <div className="text-muted-foreground italic mt-1">"{reminder.message}"</div>}
         </div>
         {showActions && !reminder.notified && (
           <div className="flex items-center gap-2 ml-4">
@@ -189,7 +231,7 @@ export default function RemindersSection() {
             </Button>
           </div>
         )}
-        {showActions && reminder.notified && (
+        {showActions && reminder.notified && !showCheckbox && (
           <Button variant="outline" size="sm" onClick={() => deleteReminder(reminder.id)}>
             Remove
           </Button>
@@ -278,7 +320,7 @@ export default function RemindersSection() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <h4 className="text-sm font-medium text-red-600">Overdue ({overdue.length})</h4>
+                <h4 className="text-sm font-medium text-red-600">Overdue - Action Required ({overdue.length})</h4>
               </div>
               <div className="space-y-2">
                 {overdue.map((r) => (
@@ -305,17 +347,39 @@ export default function RemindersSection() {
             </div>
           )}
 
-          {/* Recently Completed */}
+          {/* Recently Completed with Bulk Delete */}
           {completed.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <h4 className="text-sm font-medium text-muted-foreground">Recently Completed ({completed.slice(0, 5).length})</h4>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <h4 className="text-sm font-medium text-muted-foreground">Completed Reminders ({completed.length})</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={allCompletedSelected}
+                      onCheckedChange={toggleAllCompleted}
+                    />
+                    <span className="text-sm text-muted-foreground">Select All</span>
+                  </div>
+                  {selectedCompletedCount > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={deleteSelectedCompleted}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete Selected ({selectedCompletedCount})
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2 max-h-48 overflow-auto">
-                {completed.slice(0, 5).map((r) => (
+              <div className="space-y-2 max-h-96 overflow-auto">
+                {completed.map((r) => (
                   <div key={r.id} className="border border-green-200 bg-green-50 rounded-md opacity-75">
-                    <ReminderCard reminder={r} showActions={false} />
+                    <ReminderCard reminder={r} showActions={false} showCheckbox={true} />
                   </div>
                 ))}
               </div>

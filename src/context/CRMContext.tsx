@@ -277,12 +277,12 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [user]);
 
-  // Process schedules and reminders with timeouts
+  // Process schedules and reminders with timeouts - REMOVED AUTOMATIC REMINDER COMPLETION
   useEffect(() => {
     const now = Date.now();
     const timers: number[] = [];
 
-    // Reminders
+    // Reminders - ONLY show notifications, DO NOT mark as completed automatically
     state.reminders.forEach((r) => {
       if (r.notified) return;
       const due = new Date(r.datetime).getTime();
@@ -294,8 +294,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         } catch {}
         toast({ title: "Reminder due", description: r.message || "Follow up reminder" });
-        // mark as notified in DB
-        await supabase.from("reminders").update({ notified: true }).eq("id", r.id);
+        // REMOVED: DO NOT mark as notified automatically - user must do it manually
       }, delay);
       timers.push(id);
     });

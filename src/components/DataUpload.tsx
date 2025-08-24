@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -146,7 +145,7 @@ const DataUpload = () => {
     const mapped: MappedLead[] = parsedData.map(row => ({
       name: row[columnMapping.name] || '',
       phone: row[columnMapping.phone] || '',
-      leadDate: row[columnMapping.leadDate] || '',
+      leadDate: columnMapping.leadDate ? (row[columnMapping.leadDate] || '') : '',
     }));
 
     setMappedLeads(mapped);
@@ -165,20 +164,34 @@ const DataUpload = () => {
     let errorCount = 0;
 
     selectedLeads.forEach((lead) => {
-      const result = addLead({
-        name: lead.name,
-        phone: lead.phone,
-        source: "Walk-in",
-        sourceDetails: "",
-        status: "New Lead",
-        notes: "",
-        feedback: "",
-        leadDate: lead.leadDate,
-      });
+      try {
+        // Ensure phone and name are not empty
+        if (!lead.name.trim() || !lead.phone.trim()) {
+          console.log("Skipping lead with missing name or phone:", lead);
+          errorCount++;
+          return;
+        }
 
-      if (result.ok) {
-        successCount++;
-      } else {
+        const result = addLead({
+          name: lead.name.trim(),
+          phone: lead.phone.trim(),
+          source: "Walk-in",
+          sourceDetails: "",
+          status: "New Lead",
+          notes: "",
+          feedback: "",
+          leadDate: lead.leadDate.trim() || undefined,
+        });
+
+        if (result.ok) {
+          successCount++;
+          console.log("Lead added successfully:", lead.name);
+        } else {
+          console.log("Failed to add lead:", result.error);
+          errorCount++;
+        }
+      } catch (error) {
+        console.error("Error adding lead:", error);
         errorCount++;
       }
     });
@@ -535,7 +548,6 @@ const DataUpload = () => {
   );
 };
 
-// Export a separate component for download functionality that can be used in contacts section
 export const DownloadDataButton = () => {
   const { leads } = useCRM();
 

@@ -70,13 +70,8 @@ const RoleSwitch: React.FC = () => {
   };
 
   const onClick = () => {
-    if (isAdmin) {
-      // If admin, show user menu for switching
-      setShowUserMenu(!showUserMenu);
-    } else {
-      // Regular users just navigate to auth
-      navigate("/auth");
-    }
+    // Show user menu for everyone, not just admins
+    setShowUserMenu(!showUserMenu);
   };
 
   return (
@@ -84,7 +79,7 @@ const RoleSwitch: React.FC = () => {
       <PopoverTrigger asChild>
         <button
           onClick={onClick}
-          aria-label={isAdmin ? "Switch user or view" : "Switch user"}
+          aria-label="Switch user or view"
           className="rounded-full p-0.5 border bg-background hover:bg-accent transition-colors"
         >
           <Avatar className="h-9 w-9">
@@ -93,62 +88,96 @@ const RoleSwitch: React.FC = () => {
         </button>
       </PopoverTrigger>
       
-      {isAdmin && (
-        <PopoverContent className="w-64 p-2" align="end">
+      <PopoverContent 
+        className="w-72 p-3 bg-background border border-border shadow-lg z-50" 
+        align="end"
+        sideOffset={5}
+      >
+        <div className="space-y-2">
+          {/* Current User Info */}
+          <div className="pb-2 border-b border-border">
+            <div className="text-sm font-medium text-foreground">Current User</div>
+            <div className="flex items-center gap-2 mt-1">
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="text-xs">{label}</AvatarFallback>
+              </Avatar>
+              <div className="text-sm text-muted-foreground">
+                {currentProfile?.username || currentProfile?.email || 'Unknown'}
+              </div>
+            </div>
+          </div>
+
+          {/* Admin View Toggle */}
+          {isAdmin && (
+            <div className="space-y-1">
+              <div className="text-xs font-medium text-foreground">Admin Controls</div>
+              <Button
+                variant={isAdminView ? "default" : "outline"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => {
+                  navigate(isAdminView ? "/" : "/admin");
+                  setShowUserMenu(false);
+                }}
+              >
+                {isAdminView ? "Switch to User View" : "Switch to Admin View"}
+              </Button>
+            </div>
+          )}
+          
+          {/* User Switching */}
           <div className="space-y-1">
-            {isAdminView && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => {
-                  navigate("/");
-                  setShowUserMenu(false);
-                }}
-              >
-                Switch to User View
-              </Button>
-            )}
-            
-            {!isAdminView && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => {
-                  navigate("/admin");
-                  setShowUserMenu(false);
-                }}
-              >
-                Switch to Admin View
-              </Button>
-            )}
-            
-            <div className="border-t pt-1 mt-1">
-              <div className="text-xs text-muted-foreground px-2 py-1">Switch User:</div>
+            <div className="text-xs font-medium text-foreground">Switch User</div>
+            <div className="max-h-48 overflow-y-auto space-y-1">
               {users.map((userProfile) => (
                 <Button
                   key={userProfile.id}
-                  variant="ghost"
+                  variant={userProfile.id === user?.id ? "secondary" : "ghost"}
                   size="sm"
-                  className="w-full justify-start"
+                  className="w-full justify-start text-left p-2 h-auto"
                   onClick={() => handleSwitchUser(userProfile)}
                 >
-                  <Avatar className="h-5 w-5 mr-2">
-                    <AvatarFallback className="text-xs">
-                      {getInitial(userProfile)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {userProfile.username || userProfile.email}
-                  {userProfile.id === user?.id && (
-                    <span className="ml-auto text-xs text-primary">current</span>
-                  )}
+                  <div className="flex items-center gap-3 w-full">
+                    <Avatar className="h-7 w-7 flex-shrink-0">
+                      <AvatarFallback className="text-xs">
+                        {getInitial(userProfile)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {userProfile.username || 'No username'}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {userProfile.full_name || userProfile.email}
+                      </div>
+                    </div>
+                    {userProfile.id === user?.id && (
+                      <div className="text-xs text-primary font-medium flex-shrink-0">
+                        Current
+                      </div>
+                    )}
+                  </div>
                 </Button>
               ))}
             </div>
           </div>
-        </PopoverContent>
-      )}
+
+          {/* Sign Out */}
+          <div className="pt-2 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                navigate("/auth");
+                setShowUserMenu(false);
+              }}
+            >
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
     </Popover>
   );
 };

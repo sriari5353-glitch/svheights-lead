@@ -21,6 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
+import Notes from "@/components/Notes";
 import RemindersSection from "@/components/RemindersSection";
 import { LeadForm } from "@/components/LeadForm";
 import DataUpload, { DownloadDataButton } from "@/components/DataUpload";
@@ -748,6 +749,7 @@ function Page() {
             <TabsTrigger value="reminders">Reminders</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="diary">Diary</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
@@ -764,6 +766,10 @@ function Page() {
 
           <TabsContent value="diary" className="space-y-4">
             <Diary />
+          </TabsContent>
+
+          <TabsContent value="notes" className="space-y-4">
+            <Notes />
           </TabsContent>
         </Tabs>
       </main>

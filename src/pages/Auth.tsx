@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const setSEO = (title: string, desc: string) => {
   document.title = title;
@@ -16,7 +17,26 @@ const setSEO = (title: string, desc: string) => {
   if (!canonical.parentElement) document.head.appendChild(canonical);
 };
 
+const cleanupAuthState = () => {
+  try {
+    // Remove standard auth tokens and any sb- keys
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
+        localStorage.removeItem(key);
+      }
+    });
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  } catch (_) {
+    // ignore
+  }
+};
+
 const AuthPage: React.FC = () => {
+  const { user } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,11 +49,15 @@ const AuthPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Clean up existing auth state FIRST
+      cleanupAuthState();
+      
       const id = username.trim();
       if (!id) {
         toast("Enter your username");
         return;
       }
+      
       let emailToUse = id;
       if (!emailToUse.includes("@")) {
         const { data, error } = await supabase.rpc("get_email_by_username", { _username: emailToUse });
@@ -44,26 +68,59 @@ const AuthPage: React.FC = () => {
         }
         emailToUse = data as string;
       }
+      
+      // Force sign out to clear any existing session
       try {
         await supabase.auth.signOut({ scope: "global" as any });
-      } catch (_) {}
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email: emailToUse, password });
+      } catch (_) {
+        // Continue even if this fails
+      }
+      
+      // Wait a moment for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ 
+        email: emailToUse, 
+        password 
+      });
+      
       if (signInErr) {
         toast(signInErr.message || "Invalid credentials");
         return;
       }
-      // Check role and redirect accordingly
-      const { data: userRes } = await supabase.auth.getUser();
-      const uid = userRes?.user?.id;
-      if (uid) {
-        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-        const isAdmin = Boolean(roles?.some((r: any) => r.role === "admin"));
-        window.location.href = isAdmin ? "/admin" : "/";
-      } else {
-        window.location.href = "/";
-      }
+      
+      // Force page reload for a clean state
+      window.location.href = "/";
+      
     } catch (err: any) {
       toast(err.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSwitchUser = async () => {
+    setLoading(true);
+    try {
+      // Clean up auth state
+      cleanupAuthState();
+      
+      // Force sign out
+      try {
+        await supabase.auth.signOut({ scope: "global" as any });
+      } catch (_) {
+        // Continue even if this fails
+      }
+      
+      // Clear form
+      setUsername("");
+      setPassword("");
+      
+      // Force page reload
+      window.location.href = "/auth";
+      
+    } catch (err: any) {
+      toast("Error switching user");
     } finally {
       setLoading(false);
     }
@@ -73,22 +130,50 @@ const AuthPage: React.FC = () => {
     <main className="min-h-screen flex items-center justify-center p-6">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
-          <CardTitle className="text-center">Sign in</CardTitle>
+          <CardTitle className="text-center">
+            {user ? "Switch User" : "Sign in"}
+          </CardTitle>
+          {user && (
+            <div className="text-center text-sm text-muted-foreground">
+              Currently signed in as: <strong>{user.email}</strong>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="grid gap-3">
             <div className="grid gap-2">
               <Label>Username</Label>
-              <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="your-username" />
+              <Input 
+                value={username} 
+                onChange={(e) => setUsername(e.target.value)} 
+                placeholder="your-username" 
+              />
             </div>
             <div className="grid gap-2">
               <Label>Password</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+              />
             </div>
             <Button type="submit" variant="hero" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Signing in…" : user ? "Switch to this user" : "Sign in"}
             </Button>
           </form>
+          
+          {user && (
+            <div className="mt-4 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={handleSwitchUser}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? "Signing out..." : "Sign out & clear session"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </main>

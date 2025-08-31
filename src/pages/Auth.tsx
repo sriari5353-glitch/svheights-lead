@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -35,15 +36,54 @@ const cleanupAuthState = () => {
   }
 };
 
+interface UserProfile {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  email: string;
+}
+
 const AuthPage: React.FC = () => {
   const { user } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
     setSEO("Sign In | LeadMate CRM", "Sign in with your username and password to access LeadMate CRM.");
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, email")
+        .eq("is_active", true)
+        .order("username");
+      
+      if (error) {
+        console.error("Error fetching users:", error);
+        return;
+      }
+      
+      setUsers(data || []);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleUserSelect = (selectedUserId: string) => {
+    const selectedUser = users.find(u => u.id === selectedUserId);
+    if (selectedUser) {
+      setUsername(selectedUser.username || selectedUser.email);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,14 +181,46 @@ const AuthPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="grid gap-3">
+            {/* User Selection Dropdown */}
+            <div className="grid gap-2">
+              <Label>Quick User Selection</Label>
+              <Select onValueChange={handleUserSelect} disabled={loadingUsers}>
+                <SelectTrigger className="bg-background border border-input">
+                  <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select a user to auto-fill"} />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-input z-50 shadow-lg">
+                  {users.map((user) => (
+                    <SelectItem 
+                      key={user.id} 
+                      value={user.id}
+                      className="bg-background hover:bg-muted cursor-pointer"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {user.username || user.email}
+                        </span>
+                        {user.full_name && (
+                          <span className="text-sm text-muted-foreground">
+                            {user.full_name}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Manual Username Input */}
             <div className="grid gap-2">
               <Label>Username</Label>
               <Input 
                 value={username} 
                 onChange={(e) => setUsername(e.target.value)} 
-                placeholder="your-username" 
+                placeholder="your-username or email" 
               />
             </div>
+            
             <div className="grid gap-2">
               <Label>Password</Label>
               <Input 
@@ -157,6 +229,7 @@ const AuthPage: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)} 
               />
             </div>
+            
             <Button type="submit" variant="hero" disabled={loading}>
               {loading ? "Signing in…" : user ? "Switch to this user" : "Sign in"}
             </Button>

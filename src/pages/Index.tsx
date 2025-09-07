@@ -316,8 +316,6 @@ function NotesCalendarDialog({
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [notes, setNotes] = useState(currentNotes);
-  const [syncOption, setSyncOption] = useState<"none" | "diary" | "reminder" | "both">("none");
-  const [reminderMessage, setReminderMessage] = useState("");
 
   useEffect(() => {
     setNotes(currentNotes);
@@ -413,29 +411,8 @@ function NotesCalendarDialog({
 
   const handleSave = async () => {
     onSave(notes);
-
-    // Handle sync options
-    if (selectedDate && (syncOption === "reminder" || syncOption === "both")) {
-      try {
-        await addReminder({
-          leadId,
-          datetime: selectedDate.toISOString(),
-          message: reminderMessage || `Follow up with ${leadName}`
-        });
-        toast({ title: "Reminder added", description: "Reminder has been created successfully" });
-      } catch (error) {
-        toast({ title: "Error", description: "Failed to create reminder", variant: "destructive" });
-      }
-    }
-
-    if (selectedDate && (syncOption === "diary" || syncOption === "both")) {
-      await handleSaveToDiary();
-    }
-
     setOpen(false);
     setSelectedDate(undefined);
-    setSyncOption("none");
-    setReminderMessage("");
   };
 
   return (
@@ -488,44 +465,16 @@ function NotesCalendarDialog({
           </div>
 
           {selectedDate && (
-            <>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleSaveToDiary}
-                  className="flex-1"
-                >
-                  Save to Diary Now
-                </Button>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Additional Sync Options</Label>
-                <Select value={syncOption} onValueChange={(v: "none" | "diary" | "reminder" | "both") => setSyncOption(v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose sync option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No additional sync</SelectItem>
-                    <SelectItem value="diary">Also save to diary on save</SelectItem>
-                    <SelectItem value="reminder">Create reminder for this date</SelectItem>
-                    <SelectItem value="both">Save to diary and create reminder</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {(syncOption === "reminder" || syncOption === "both") && (
-                <div className="grid gap-2">
-                  <Label>Reminder Message (Optional)</Label>
-                  <Input 
-                    value={reminderMessage} 
-                    onChange={(e) => setReminderMessage(e.target.value)} 
-                    placeholder={`Follow up with ${leadName}`}
-                  />
-                </div>
-              )}
-            </>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSaveToDiary}
+                className="flex-1"
+              >
+                Save to Diary Now
+              </Button>
+            </div>
           )}
         </div>
         <DialogFooter>

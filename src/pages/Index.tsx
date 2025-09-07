@@ -360,23 +360,43 @@ function NotesCalendarDialog({
           
           <div className="grid gap-2">
             <Label>Select Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={handleDateSelect}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start flex-1">
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  if (selectedDate) {
+                    addReminder({
+                      leadId,
+                      datetime: selectedDate.toISOString(),
+                      message: `Follow up with ${leadName}`
+                    });
+                    toast({ title: "Reminder created", description: "Reminder has been added successfully" });
+                  } else {
+                    toast({ title: "Select date first", description: "Please pick a date for the reminder", variant: "destructive" });
+                  }
+                }}
+              >
+                Create Reminder
+              </Button>
+            </div>
           </div>
 
           {selectedDate && (

@@ -107,9 +107,9 @@ function getStatusBadge(status: LeadStatus) {
 function getFeedbackBadge(feedback?: Feedback) {
   if (!feedback) return null;
   const map: Record<string, any> = {
-    Prospect: "secondary",
-    "Follow-up": "secondary",
-    Visited: "secondary",
+    Prospect: "accent",
+    "Follow-up": "warning",
+    Visited: "success",
     Rejected: "destructive",
   };
   return <Badge variant={map[feedback]}>{feedback}</Badge>;

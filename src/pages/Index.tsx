@@ -315,11 +315,14 @@ function NotesCalendarDialog({
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [notes, setNotes] = useState(currentNotes);
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    setNotes(currentNotes);
-  }, [currentNotes, open]);
+    if (open) {
+      setNotes("");
+      setSelectedDate(undefined);
+    }
+  }, [open]);
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -410,7 +413,9 @@ function NotesCalendarDialog({
   };
 
   const handleSave = async () => {
-    onSave(notes);
+    if (notes.trim()) {
+      onSave(notes);
+    }
     setOpen(false);
     setSelectedDate(undefined);
   };
@@ -424,16 +429,16 @@ function NotesCalendarDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Date to Notes - {leadName}</DialogTitle>
+          <DialogTitle>Add Note - {leadName}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid gap-2">
-            <Label>Notes</Label>
+            <Label>New Note</Label>
             <Textarea 
               value={notes} 
               onChange={(e) => setNotes(e.target.value)} 
               rows={4}
-              placeholder="Add your notes here..."
+              placeholder="Add your note here..."
             />
           </div>
           
@@ -481,8 +486,8 @@ function NotesCalendarDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            Save Notes
+          <Button onClick={handleSave} disabled={!notes.trim()}>
+            Add Note
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -492,6 +497,7 @@ function NotesCalendarDialog({
 
 function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL" }) {
   const { leads, deleteLead, updateLead } = useCRM();
+  const { user } = useAuth();
   const [selection, setSelection] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
@@ -499,9 +505,47 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   const [st, setSt] = useState<LeadStatus | undefined>(undefined);
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [leadNotes, setLeadNotes] = useState<Record<string, Array<{id: string, content: string, created_at: string}>>>({});
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>(undefined);
+
+  // Fetch notes for all leads
+  useEffect(() => {
+    const fetchLeadNotes = async () => {
+      if (!user || leads.length === 0) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("lead_notes")
+          .select("*")
+          .eq("user_id", user.id)
+          .in("lead_id", leads.map(l => l.id))
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        // Group notes by lead_id
+        const groupedNotes: Record<string, Array<{id: string, content: string, created_at: string}>> = {};
+        data?.forEach(note => {
+          if (!groupedNotes[note.lead_id]) {
+            groupedNotes[note.lead_id] = [];
+          }
+          groupedNotes[note.lead_id].push({
+            id: note.id,
+            content: note.content,
+            created_at: note.created_at
+          });
+        });
+
+        setLeadNotes(groupedNotes);
+      } catch (error) {
+        console.error("Error fetching lead notes:", error);
+      }
+    };
+
+    fetchLeadNotes();
+  }, [leads, user]);
 
   useEffect(() => {
     if (activeFeedback !== undefined) {
@@ -529,10 +573,46 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
 
   const selectedIds = Object.keys(selection).filter((id) => selection[id]);
 
-  const handleNotesUpdate = (leadId: string, newNotes: string) => {
-    const lead = leads.find(l => l.id === leadId);
-    if (lead) {
-      updateLead({ ...lead, notes: newNotes });
+  const handleNotesUpdate = async (leadId: string, newNoteContent: string) => {
+    if (!user || !newNoteContent.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("lead_notes")
+        .insert({
+          lead_id: leadId,
+          user_id: user.id,
+          content: newNoteContent.trim()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setLeadNotes(prev => ({
+        ...prev,
+        [leadId]: [
+          {
+            id: data.id,
+            content: data.content,
+            created_at: data.created_at
+          },
+          ...(prev[leadId] || [])
+        ]
+      }));
+
+      toast({
+        title: "Note added",
+        description: "Note has been saved successfully"
+      });
+    } catch (error) {
+      console.error("Error saving note:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save note",
+        variant: "destructive"
+      });
     }
   };
 
@@ -676,19 +756,34 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                             </div>
                           </div>
                         </TableCell>
-                       <TableCell className="min-w-[200px] md:min-w-[300px]">
-                         <div className="flex items-start gap-2">
-                           <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words flex-1">
-                             {l.notes || "No notes"}
-                           </div>
-                           <NotesCalendarDialog
-                             leadId={l.id}
-                             leadName={l.name}
-                             currentNotes={l.notes}
-                             onSave={(notes) => handleNotesUpdate(l.id, notes)}
-                           />
-                         </div>
-                       </TableCell>
+                        <TableCell className="min-w-[200px] md:min-w-[300px]">
+                          <div className="flex items-start gap-2">
+                            <div className="max-h-24 overflow-y-auto text-sm leading-relaxed flex-1">
+                              {leadNotes[l.id] && leadNotes[l.id].length > 0 ? (
+                                <div className="space-y-2">
+                                  {leadNotes[l.id].map((note, index) => (
+                                    <div key={note.id} className="border-l-2 border-muted pl-2">
+                                      <div className="text-xs text-muted-foreground mb-1">
+                                        {format(new Date(note.created_at), "MMM d, yyyy 'at' h:mm a")}
+                                      </div>
+                                      <div className="text-sm break-words whitespace-pre-wrap">
+                                        {note.content}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-muted-foreground text-sm">No notes</div>
+                              )}
+                            </div>
+                            <NotesCalendarDialog
+                              leadId={l.id}
+                              leadName={l.name}
+                              currentNotes=""
+                              onSave={(notes) => handleNotesUpdate(l.id, notes)}
+                            />
+                          </div>
+                        </TableCell>
                        <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
                        <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>
                        <TableCell className="text-right space-x-2">

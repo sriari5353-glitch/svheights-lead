@@ -529,10 +529,37 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
 
   const selectedIds = Object.keys(selection).filter((id) => selection[id]);
 
+  const parseTimestampedNotes = (notes: string) => {
+    if (!notes.trim()) return [];
+    
+    // Split by timestamp pattern and filter out empty entries
+    const entries = notes.split(/(?=\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M:)/).filter(entry => entry.trim());
+    
+    return entries.map(entry => {
+      const match = entry.match(/^(\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M):\s*([\s\S]*)$/);
+      if (match) {
+        return {
+          timestamp: match[1],
+          content: match[2].trim(),
+          date: new Date(match[1])
+        };
+      }
+      // If no timestamp found, treat as legacy note
+      return {
+        timestamp: '',
+        content: entry.trim(),
+        date: new Date(0) // Very old date for sorting
+      };
+    }).sort((a, b) => b.date.getTime() - a.date.getTime()); // Latest first
+  };
+
   const handleNotesUpdate = (leadId: string, newNotes: string) => {
     const lead = leads.find(l => l.id === leadId);
-    if (lead) {
-      updateLead({ ...lead, notes: newNotes });
+    if (lead && newNotes.trim()) {
+      const timestamp = new Date().toLocaleString();
+      const timestampedNote = `${timestamp}: ${newNotes.trim()}`;
+      const updatedNotes = lead.notes ? `${timestampedNote}\n\n${lead.notes}` : timestampedNote;
+      updateLead({ ...lead, notes: updatedNotes });
     }
   };
 
@@ -676,19 +703,35 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                             </div>
                           </div>
                         </TableCell>
-                       <TableCell className="min-w-[200px] md:min-w-[300px]">
-                         <div className="flex items-start gap-2">
-                           <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words flex-1">
-                             {l.notes || "No notes"}
-                           </div>
-                           <NotesCalendarDialog
-                             leadId={l.id}
-                             leadName={l.name}
-                             currentNotes={l.notes}
-                             onSave={(notes) => handleNotesUpdate(l.id, notes)}
-                           />
-                         </div>
-                       </TableCell>
+                        <TableCell className="min-w-[200px] md:min-w-[300px]">
+                          <div className="flex items-start gap-2">
+                            <div className="max-h-24 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap break-words flex-1 space-y-1">
+                              {(() => {
+                                const parsedNotes = parseTimestampedNotes(l.notes);
+                                if (parsedNotes.length === 0) return <span className="text-muted-foreground">No notes</span>;
+                                
+                                return parsedNotes.map((note, index) => (
+                                  <div key={index} className="border-l-2 border-primary/20 pl-2 py-1">
+                                    {note.timestamp && (
+                                      <div className="text-xs text-primary font-medium mb-1">
+                                        {note.timestamp}
+                                      </div>
+                                    )}
+                                    <div className="text-sm text-foreground">
+                                      {note.content}
+                                    </div>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                            <NotesCalendarDialog
+                              leadId={l.id}
+                              leadName={l.name}
+                              currentNotes=""
+                              onSave={(notes) => handleNotesUpdate(l.id, notes)}
+                            />
+                          </div>
+                        </TableCell>
                        <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
                        <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>
                        <TableCell className="text-right space-x-2">

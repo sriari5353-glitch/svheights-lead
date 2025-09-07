@@ -576,23 +576,23 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                    <>
                      <TableRow key={l.id}>
                        <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
-                        <TableCell className="font-medium">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-1">
-                              <div className={
-                                l.feedback === "Prospect" ? "text-accent-foreground" :
-                                l.feedback === "Follow-up" ? "text-warning-foreground" :
-                                l.feedback === "Visited" ? "text-success-foreground" :
-                                l.feedback === "Rejected" ? "text-destructive-foreground" :
-                                ""
-                              }>{l.name}</div>
-                              <div className={`text-sm ${
-                                l.feedback === "Prospect" ? "text-accent-foreground/80" :
-                                l.feedback === "Follow-up" ? "text-warning-foreground/80" :
-                                l.feedback === "Visited" ? "text-success-foreground/80" :
-                                l.feedback === "Rejected" ? "text-destructive-foreground/80" :
-                                "text-muted-foreground"
-                              }`}>{l.phone}</div>
+                         <TableCell className="font-medium">
+                           <div className="flex items-start gap-3">
+                             <div className="flex-1">
+                               <div className={`rounded px-2 py-1 ${
+                                 l.feedback === "Prospect" ? "bg-accent text-accent-foreground" :
+                                 l.feedback === "Follow-up" ? "bg-warning text-warning-foreground" :
+                                 l.feedback === "Visited" ? "bg-success text-success-foreground" :
+                                 l.feedback === "Rejected" ? "bg-destructive text-destructive-foreground" :
+                                 ""
+                               }`}>{l.name}</div>
+                               <div className={`text-sm rounded px-2 py-1 mt-1 ${
+                                 l.feedback === "Prospect" ? "bg-accent text-accent-foreground" :
+                                 l.feedback === "Follow-up" ? "bg-warning text-warning-foreground" :
+                                 l.feedback === "Visited" ? "bg-success text-success-foreground" :
+                                 l.feedback === "Rejected" ? "bg-destructive text-destructive-foreground" :
+                                 "text-muted-foreground"
+                               }`}>{l.phone}</div>
                               <div className="flex items-center gap-1 mt-1">
                                 <button 
                                   onClick={() => window.open(`tel:${l.phone}`, '_self')}

@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight, Phone, MessageCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -576,23 +576,37 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                    <>
                      <TableRow key={l.id}>
                        <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
-                       <TableCell className="font-medium">
-                         <div className="flex items-center gap-2">
-                           <button 
-                             onClick={() => setExpandedRows(prev => ({ ...prev, [l.id]: !prev[l.id] }))}
-                             className="p-1 hover:bg-muted rounded transition-colors"
-                           >
-                             {expandedRows[l.id] ? 
-                               <ChevronDown className="h-4 w-4" /> : 
-                               <ChevronRight className="h-4 w-4" />
-                             }
-                           </button>
-                           <div>
-                             <div>{l.name}</div>
-                             <div className="text-sm text-muted-foreground">{l.phone}</div>
-                           </div>
-                         </div>
-                       </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <div>{l.name}</div>
+                              <div className="text-sm text-muted-foreground">{l.phone}</div>
+                              <div className="flex items-center gap-1 mt-1">
+                                <button 
+                                  onClick={() => window.open(`tel:${l.phone}`, '_self')}
+                                  className="p-1 hover:bg-primary/10 rounded transition-colors"
+                                  title="Call"
+                                >
+                                  <Phone className="h-4 w-4 text-primary" />
+                                </button>
+                                <button 
+                                  onClick={() => window.open(`https://wa.me/${l.phone.replace(/[^0-9]/g, '')}`, '_blank')}
+                                  className="p-1 hover:bg-green-100 rounded transition-colors"
+                                  title="WhatsApp"
+                                >
+                                  <MessageCircle className="h-4 w-4 text-green-600" />
+                                </button>
+                                <button 
+                                  onClick={() => setExpandedRows(prev => ({ ...prev, [l.id]: !prev[l.id] }))}
+                                  className="p-1 hover:bg-muted rounded transition-colors ml-1"
+                                  title="Show details"
+                                >
+                                  <ChevronDown className={`h-4 w-4 transition-transform ${expandedRows[l.id] ? 'rotate-180' : ''}`} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
                        <TableCell className="min-w-[200px] md:min-w-[300px]">
                          <div className="flex items-start gap-2">
                            <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words flex-1">

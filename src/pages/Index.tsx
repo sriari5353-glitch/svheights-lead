@@ -198,6 +198,108 @@ function CalendarNotesCard() {
   );
 }
 
+function CreateReminderDialog({ 
+  leadId, 
+  leadName 
+}: { 
+  leadId: string; 
+  leadName: string; 
+}) {
+  const { addReminder } = useCRM();
+  const [open, setOpen] = useState(false);
+  const [reminderText, setReminderText] = useState("");
+  const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
+
+  const handleCreateReminder = async () => {
+    if (!reminderDate) {
+      toast({ 
+        title: "Select date first", 
+        description: "Please pick a date for the reminder", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    const message = reminderText.trim() || `Follow up with ${leadName}`;
+    
+    try {
+      await addReminder({
+        leadId,
+        datetime: reminderDate.toISOString(),
+        message
+      });
+      toast({ 
+        title: "Reminder created", 
+        description: "Reminder has been added successfully" 
+      });
+      setOpen(false);
+      setReminderText("");
+      setReminderDate(undefined);
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to create reminder", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="flex-1">
+          Create Reminder
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create Reminder - {leadName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid gap-2">
+            <Label>Select Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="justify-start">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {reminderDate ? format(reminderDate, "PPP") : "Pick a date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={reminderDate}
+                  onSelect={setReminderDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          <div className="grid gap-2">
+            <Label>Reminder Text</Label>
+            <Textarea 
+              value={reminderText} 
+              onChange={(e) => setReminderText(e.target.value)} 
+              rows={3}
+              placeholder={`Follow up with ${leadName}`}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreateReminder}>
+            Create Reminder
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function NotesCalendarDialog({
   leadId, 
   leadName, 
@@ -378,24 +480,10 @@ function NotesCalendarDialog({
                   />
                 </PopoverContent>
               </Popover>
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => {
-                  if (selectedDate) {
-                    addReminder({
-                      leadId,
-                      datetime: selectedDate.toISOString(),
-                      message: `Follow up with ${leadName}`
-                    });
-                    toast({ title: "Reminder created", description: "Reminder has been added successfully" });
-                  } else {
-                    toast({ title: "Select date first", description: "Please pick a date for the reminder", variant: "destructive" });
-                  }
-                }}
-              >
-                Create Reminder
-              </Button>
+              <CreateReminderDialog 
+                leadId={leadId}
+                leadName={leadName}
+              />
             </div>
           </div>
 

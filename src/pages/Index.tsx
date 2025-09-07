@@ -777,15 +777,19 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   );
 }
 
-function BulkWhatsApp({ selectedIds, clearSelection }: { selectedIds: string[]; clearSelection: () => void }) {
+function BulkWhatsApp({ selectedIds, clearSelection, allLeads }: { selectedIds: string[]; clearSelection: () => void; allLeads?: any[] }) {
   const { sendWhatsAppNow, scheduleWhatsApp, whatsappHistory } = useCRM();
   const [message, setMessage] = useState("");
   const [mode, setMode] = useState<"now" | "schedule">("now");
   const [when, setWhen] = useState<string>("");
 
-  const act = () => {
-    if (!selectedIds.length) {
-      toast({ title: "Select contacts first", variant: "destructive" });
+  const getAllLeadIds = () => allLeads ? allLeads.map(lead => lead.id) : [];
+
+  const act = (useAllContacts = false) => {
+    const targetIds = useAllContacts ? getAllLeadIds() : selectedIds;
+    
+    if (!targetIds.length) {
+      toast({ title: useAllContacts ? "No contacts available" : "Select contacts first", variant: "destructive" });
       return;
     }
     if (!message.trim()) {
@@ -793,15 +797,15 @@ function BulkWhatsApp({ selectedIds, clearSelection }: { selectedIds: string[]; 
       return;
     }
     if (mode === "now") {
-      sendWhatsAppNow(selectedIds, message.trim());
-      clearSelection();
+      sendWhatsAppNow(targetIds, message.trim());
+      if (!useAllContacts) clearSelection();
     } else {
       if (!when) {
         toast({ title: "Pick date & time", variant: "destructive" });
         return;
       }
-      scheduleWhatsApp({ datetime: new Date(when).toISOString(), message: message.trim(), leadIds: selectedIds });
-      clearSelection();
+      scheduleWhatsApp({ datetime: new Date(when).toISOString(), message: message.trim(), leadIds: targetIds });
+      if (!useAllContacts) clearSelection();
       setMessage("");
       setWhen("");
     }
@@ -838,7 +842,14 @@ function BulkWhatsApp({ selectedIds, clearSelection }: { selectedIds: string[]; 
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => { setMessage(""); setWhen(""); }}>Reset</Button>
-            <Button variant="hero" onClick={act}>{mode === "now" ? "Send now" : "Schedule"} ({selectedIds.length})</Button>
+            {selectedIds.length > 0 && (
+              <Button variant="secondary" onClick={() => act(false)}>
+                {mode === "now" ? "Send now" : "Schedule"} ({selectedIds.length})
+              </Button>
+            )}
+            <Button variant="hero" onClick={() => act(true)}>
+              {mode === "now" ? "Send to All" : "Schedule to All"} ({getAllLeadIds().length})
+            </Button>
           </div>
         </div>
 
@@ -872,6 +883,7 @@ function LogoutButton() {
 
 function Page() {
   useSEO();
+  const { leads } = useCRM();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<string>("contacts");
   const [activeFeedback, setActiveFeedback] = useState<Feedback | "ALL" | undefined>(undefined);
@@ -913,7 +925,7 @@ function Page() {
           </TabsContent>
 
           <TabsContent value="whatsapp" className="space-y-4">
-            <BulkWhatsApp selectedIds={[]} clearSelection={() => {}} />
+            <BulkWhatsApp selectedIds={[]} clearSelection={() => {}} allLeads={leads} />
           </TabsContent>
 
           <TabsContent value="diary" className="space-y-4">

@@ -464,6 +464,47 @@ function NotesCalendarDialog({
             </div>
           </div>
 
+          <div className="flex gap-2">
+            <Select 
+              value={leads.find(l => l.id === leadId)?.feedback || ""} 
+              onValueChange={(value) => {
+                const lead = leads.find(l => l.id === leadId);
+                if (lead) {
+                  updateLead({ ...lead, feedback: value as Feedback });
+                  toast({ title: "Feedback updated", description: `Updated to ${value}` });
+                }
+              }}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Feedback" />
+              </SelectTrigger>
+              <SelectContent>
+                {FEEDBACK_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select 
+              value={leads.find(l => l.id === leadId)?.status || ""} 
+              onValueChange={(value) => {
+                const lead = leads.find(l => l.id === leadId);
+                if (lead) {
+                  updateLead({ ...lead, status: value as LeadStatus });
+                  toast({ title: "Status updated", description: `Updated to ${value}` });
+                }
+              }}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {selectedDate && (
             <div className="flex gap-2">
               <Select 

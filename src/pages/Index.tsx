@@ -579,8 +579,20 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                         <TableCell className="font-medium">
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
-                              <div>{l.name}</div>
-                              <div className="text-sm text-muted-foreground">{l.phone}</div>
+                              <div className={
+                                l.feedback === "Prospect" ? "text-accent-foreground" :
+                                l.feedback === "Follow-up" ? "text-warning-foreground" :
+                                l.feedback === "Visited" ? "text-success-foreground" :
+                                l.feedback === "Rejected" ? "text-destructive-foreground" :
+                                ""
+                              }>{l.name}</div>
+                              <div className={`text-sm ${
+                                l.feedback === "Prospect" ? "text-accent-foreground/80" :
+                                l.feedback === "Follow-up" ? "text-warning-foreground/80" :
+                                l.feedback === "Visited" ? "text-success-foreground/80" :
+                                l.feedback === "Rejected" ? "text-destructive-foreground/80" :
+                                "text-muted-foreground"
+                              }`}>{l.phone}</div>
                               <div className="flex items-center gap-1 mt-1">
                                 <button 
                                   onClick={() => window.open(`tel:${l.phone}`, '_self')}

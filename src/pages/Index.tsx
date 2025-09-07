@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -441,6 +441,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
   const [st, setSt] = useState<LeadStatus | undefined>(undefined);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>(undefined);
@@ -556,64 +557,89 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={(v) => toggleAll(Boolean(v))} /></TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="min-w-[200px] md:min-w-[300px]">
-                    <div className="flex items-center gap-2">
-                      Notes
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </TableHead>
-                  <TableHead className={isEditMode ? "md:table-cell" : "hidden"}>Source</TableHead>
-                  <TableHead className="hidden lg:table-cell">Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Feedback</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
+                 <TableRow>
+                   <TableHead className="w-10"><Checkbox checked={allSelected} onCheckedChange={(v) => toggleAll(Boolean(v))} /></TableHead>
+                   <TableHead>Name</TableHead>
+                   <TableHead className="min-w-[200px] md:min-w-[300px]">
+                     <div className="flex items-center gap-2">
+                       Notes
+                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                     </div>
+                   </TableHead>
+                   <TableHead className="hidden lg:table-cell">Status</TableHead>
+                   <TableHead className="hidden lg:table-cell">Feedback</TableHead>
+                   <TableHead className="text-right">Actions</TableHead>
+                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div>{l.name}</div>
-                        <div className="text-sm text-muted-foreground">{l.phone}</div>
-                        {l.leadDate && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <CalendarIcon className="h-3 w-3" />
-                            {format(new Date(l.leadDate), "PPP")}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="min-w-[200px] md:min-w-[300px]">
-                      <div className="flex items-start gap-2">
-                        <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words flex-1">
-                          {l.notes || "No notes"}
-                        </div>
-                        <NotesCalendarDialog
-                          leadId={l.id}
-                          leadName={l.name}
-                          currentNotes={l.notes}
-                          onSave={(notes) => handleNotesUpdate(l.id, notes)}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className={isEditMode ? "md:table-cell" : "hidden"}>{l.source}{l.sourceDetails ? <span className="text-muted-foreground"> • {l.sourceDetails}</span> : null}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => { setEditing(l); setOpen(true); }}>Edit</Button>
-                      <DoubleConfirmDelete onDelete={() => deleteLead(l.id)} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filtered.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No contacts found</TableCell>
-                  </TableRow>
-                )}
+                 {filtered.map((l) => (
+                   <>
+                     <TableRow key={l.id}>
+                       <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
+                       <TableCell className="font-medium">
+                         <div className="flex items-center gap-2">
+                           <button 
+                             onClick={() => setExpandedRows(prev => ({ ...prev, [l.id]: !prev[l.id] }))}
+                             className="p-1 hover:bg-muted rounded transition-colors"
+                           >
+                             {expandedRows[l.id] ? 
+                               <ChevronDown className="h-4 w-4" /> : 
+                               <ChevronRight className="h-4 w-4" />
+                             }
+                           </button>
+                           <div>
+                             <div>{l.name}</div>
+                             <div className="text-sm text-muted-foreground">{l.phone}</div>
+                           </div>
+                         </div>
+                       </TableCell>
+                       <TableCell className="min-w-[200px] md:min-w-[300px]">
+                         <div className="flex items-start gap-2">
+                           <div className="max-h-24 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words flex-1">
+                             {l.notes || "No notes"}
+                           </div>
+                           <NotesCalendarDialog
+                             leadId={l.id}
+                             leadName={l.name}
+                             currentNotes={l.notes}
+                             onSave={(notes) => handleNotesUpdate(l.id, notes)}
+                           />
+                         </div>
+                       </TableCell>
+                       <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
+                       <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>
+                       <TableCell className="text-right space-x-2">
+                         <Button variant="outline" size="sm" onClick={() => { setEditing(l); setOpen(true); }}>Edit</Button>
+                         <DoubleConfirmDelete onDelete={() => deleteLead(l.id)} />
+                       </TableCell>
+                     </TableRow>
+                     {expandedRows[l.id] && (
+                       <TableRow key={`${l.id}-expanded`} className="bg-muted/20">
+                         <TableCell></TableCell>
+                         <TableCell colSpan={5}>
+                           <div className="py-2 space-y-2 text-sm">
+                             <div className="flex items-center gap-2">
+                               <span className="font-medium">Source:</span>
+                               <span>{l.source}{l.sourceDetails ? ` • ${l.sourceDetails}` : ''}</span>
+                             </div>
+                             {l.leadDate && (
+                               <div className="flex items-center gap-2">
+                                 <CalendarIcon className="h-4 w-4" />
+                                 <span className="font-medium">Lead Date:</span>
+                                 <span>{format(new Date(l.leadDate), "PPP")}</span>
+                               </div>
+                             )}
+                           </div>
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </>
+                 ))}
+                 {filtered.length === 0 && (
+                   <TableRow>
+                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No contacts found</TableCell>
+                   </TableRow>
+                 )}
               </TableBody>
             </Table>
           </div>

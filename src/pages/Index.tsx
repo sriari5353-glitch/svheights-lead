@@ -946,7 +946,7 @@ function BulkWhatsApp({ selectedIds, clearSelection, allLeads }: { selectedIds: 
 function LogoutButton() {
   const { signOut } = useAuth();
   return (
-    <Button variant="outline" onClick={signOut} className="text-primary-foreground border-primary-foreground/40 hover:bg-white/10">
+    <Button variant="outline" onClick={signOut} className="text-foreground border-border hover:bg-accent hover:text-accent-foreground font-medium">
       <LogOut className="h-4 w-4 mr-1" /> Logout
     </Button>
   );

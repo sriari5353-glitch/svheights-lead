@@ -960,13 +960,10 @@ function Page() {
   const [activeFeedback, setActiveFeedback] = useState<Feedback | "ALL" | undefined>(undefined);
   return (
     <div className="min-h-screen">
-      <header className="relative mb-6 overflow-hidden rounded-xl border bg-[linear-gradient(120deg,_hsl(var(--primary))_0%,_hsl(var(--accent))_100%)] text-primary-foreground">
-        <div className="px-6 py-10 md:px-10">
+      <header className="relative mb-4 overflow-hidden rounded-xl border bg-[linear-gradient(120deg,_hsl(var(--primary))_0%,_hsl(var(--accent))_100%)] text-primary-foreground">
+        <div className="px-6 py-4 md:px-10">
           <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-semibold">SV Heights LeadMate CRM</h1>
-              <p className="text-primary-foreground/90 mt-1">Track leads, follow-ups, and WhatsApp campaigns with ease.</p>
-            </div>
+            <h1 className="text-xl md:text-2xl font-semibold">SV Heights</h1>
             <div className="flex items-center gap-2">
               <DataUpload />
               <LogoutButton />

@@ -73,6 +73,7 @@ export type Database = {
       }
       diary: {
         Row: {
+          contact_id: string | null
           content: string
           created_at: string
           date: string
@@ -81,6 +82,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          contact_id?: string | null
           content?: string
           created_at?: string
           date?: string
@@ -89,6 +91,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          contact_id?: string | null
           content?: string
           created_at?: string
           date?: string
@@ -96,7 +99,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "diary_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_notes: {
         Row: {

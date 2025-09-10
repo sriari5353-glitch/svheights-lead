@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { BookOpen, Calendar as CalendarIcon, List } from "lucide-react";
+import { BookOpen, Calendar as CalendarIcon, List, Users } from "lucide-react";
 import { format } from "date-fns";
 import QuickNoteCreate from "./QuickNoteCreate";
 
@@ -14,8 +15,15 @@ interface DiaryEntry {
   id: string;
   date: string;
   content: string;
+  contact_id?: string;
   created_at: string;
   updated_at: string;
+}
+
+interface Lead {
+  id: string;
+  name: string;
+  phone: string;
 }
 
 export default function Diary() {
@@ -26,14 +34,19 @@ export default function Diary() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<"calendar" | "list">("calendar");
+  const [contacts, setContacts] = useState<Lead[]>([]);
+  const [selectedContactId, setSelectedContactId] = useState<string>("");
 
   // Load all diary entries when user changes
   useEffect(() => {
     if (user) {
       fetchAllEntries();
+      fetchContacts();
     } else {
       setEntries([]);
       setContent("");
+      setContacts([]);
+      setSelectedContactId("");
     }
   }, [user]);
 
@@ -93,7 +106,7 @@ export default function Diary() {
     try {
       const { data, error } = await supabase
         .from("diary")
-        .select("content")
+        .select("content, contact_id")
         .eq("user_id", user.id)
         .eq("date", dateStr)
         .maybeSingle();
@@ -102,6 +115,27 @@ export default function Diary() {
         console.error("Error fetching diary entry:", error);
       } else {
         setContent(data?.content || "");
+        setSelectedContactId(data?.contact_id || "");
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error);
+    }
+  }
+
+  async function fetchContacts() {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("id, name, phone")
+        .eq("created_by", user.id)
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching contacts:", error);
+      } else {
+        setContacts(data || []);
       }
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -128,6 +162,7 @@ export default function Diary() {
           user_id: user.id,
           date: dateStr,
           content: content,
+          contact_id: selectedContactId || null,
           updated_at: new Date().toISOString(),
         }, { 
           onConflict: "user_id,date" 
@@ -221,17 +256,47 @@ export default function Diary() {
                   disabled={loading || saving}
                   className="resize-none"
                 />
+                {selectedContactId && (
+                  <div className="text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      Linked to: {contacts.find(c => c.id === selectedContactId)?.name} 
+                      ({contacts.find(c => c.id === selectedContactId)?.phone})
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
                     {content.length} characters
                   </span>
-                  <Button 
-                    onClick={saveDiary} 
-                    disabled={loading || saving}
-                    variant="hero"
-                  >
-                    {saving ? "Saving..." : "Save Diary"}
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Select 
+                      value={selectedContactId} 
+                      onValueChange={setSelectedContactId}
+                    >
+                      <SelectTrigger className="w-48">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          <SelectValue placeholder="Link to contact" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No contact</SelectItem>
+                        {contacts.map((contact) => (
+                          <SelectItem key={contact.id} value={contact.id}>
+                            {contact.name} ({contact.phone})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={saveDiary} 
+                      disabled={loading || saving}
+                      variant="hero"
+                    >
+                      {saving ? "Saving..." : "Save Diary"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

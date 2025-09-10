@@ -6,11 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Plus, Edit, Search, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useCRM } from "@/context/CRMContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -19,14 +17,12 @@ interface Note {
   id: string;
   title: string;
   content: string;
-  contact_id?: string;
   created_at: string;
   updated_at: string;
 }
 
 export default function Notes() {
   const { user } = useAuth();
-  const { leads } = useCRM();
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +35,6 @@ export default function Notes() {
   // Form states
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [selectedContactId, setSelectedContactId] = useState<string>("none");
 
   // Auto-save timeout
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -122,16 +117,12 @@ export default function Notes() {
           } : null);
         }
       } else {
-        // Create new note with contact reference
+        // Create new note
         const noteData: any = {
           user_id: user.id,
           title: title.trim(),
           content: formattedContent,
         };
-        
-        if (selectedContactId && selectedContactId !== "none") {
-          noteData.contact_id = selectedContactId;
-        }
 
         const { data, error } = await supabase
           .from("notes")
@@ -159,7 +150,7 @@ export default function Notes() {
     } finally {
       setSaving(false);
     }
-  }, [user, title, content, selectedNote, selectedContactId]);
+  }, [user, title, content, selectedNote]);
 
   // Auto-save when content changes
   useEffect(() => {
@@ -242,7 +233,6 @@ export default function Notes() {
     setSelectedNote(null);
     setTitle("");
     setContent("");
-    setSelectedContactId("none");
     setNewNoteDialog(true);
     setIsEditing(true);
   };
@@ -252,7 +242,6 @@ export default function Notes() {
     await saveNote();
     setNewNoteDialog(false);
     setIsEditing(false);
-    setSelectedContactId("none");
   };
 
   // Toggle note selection
@@ -277,13 +266,6 @@ export default function Notes() {
   // Clear selection
   const clearSelection = () => {
     setSelectedNotes(new Set());
-  };
-
-  // Get contact name by ID
-  const getContactName = (contactId?: string) => {
-    if (!contactId) return null;
-    const contact = leads.find(lead => lead.id === contactId);
-    return contact ? contact.name : "Unknown Contact";
   };
 
   // Filter notes based on search
@@ -405,11 +387,6 @@ export default function Notes() {
                             <ChevronRight className="h-4 w-4 text-primary" />
                             <h4 className="font-medium text-sm truncate">{note.title}</h4>
                           </div>
-                          {note.contact_id && (
-                            <p className="text-xs text-primary mt-1">
-                              Contact: {getContactName(note.contact_id)}
-                            </p>
-                          )}
                           <div className="text-xs text-muted-foreground mt-1 space-y-1">
                             {note.content ? (
                               <div className="max-h-12 overflow-hidden">
@@ -503,11 +480,6 @@ export default function Notes() {
                 ) : (
                   <div className="space-y-4">
                     <h3 className="text-xl font-semibold">{selectedNote.title}</h3>
-                    {selectedNote.contact_id && (
-                      <div className="text-sm text-primary bg-primary/10 px-3 py-2 rounded-lg">
-                        Contact: {getContactName(selectedNote.contact_id)}
-                      </div>
-                    )}
                     <div className="prose prose-sm max-w-none">
                       <div className="whitespace-pre-wrap text-sm leading-relaxed space-y-1">
                         {selectedNote.content ? (
@@ -552,22 +524,6 @@ export default function Notes() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Link to Contact (Optional)</label>
-              <Select value={selectedContactId} onValueChange={setSelectedContactId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select contact..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No contact</SelectItem>
-                  {leads.map((lead) => (
-                    <SelectItem key={lead.id} value={lead.id}>
-                      {lead.name} - {lead.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Content</label>
               <Textarea

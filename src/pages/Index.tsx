@@ -115,6 +115,111 @@ function getFeedbackBadge(feedback?: Feedback) {
   return <Badge variant={map[feedback]}>{feedback}</Badge>;
 }
 
+function QuickNoteCreate() {
+  const [quickNote, setQuickNote] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleSubmit = () => {
+    if (!quickNote.trim()) return;
+    
+    // Get today's key
+    const todayKey = format(new Date(), "yyyy-MM-dd");
+    
+    // Add to today's diary
+    try {
+      const existing = JSON.parse(localStorage.getItem("svh_day_diary_v1") || "{}");
+      const currentText = existing[todayKey]?.text || "";
+      const newText = currentText ? `${currentText}\n\n• ${quickNote}` : `• ${quickNote}`;
+      
+      existing[todayKey] = { 
+        text: newText, 
+        updatedAt: new Date().toISOString() 
+      };
+      
+      localStorage.setItem("svh_day_diary_v1", JSON.stringify(existing));
+      
+      setQuickNote("");
+      setIsExpanded(false);
+      
+      toast({
+        title: "Note added",
+        description: "Quick note saved to today's diary"
+      });
+      
+      // Trigger a re-render of the CalendarNotesCard
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save note",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && e.ctrlKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  return (
+    <Card className="shadow-sm mb-4">
+      <CardContent className="pt-4">
+        <div className="flex items-start gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="h-8 w-8 p-0 mt-1"
+          >
+            <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+          </Button>
+          <div className="flex-1">
+            {isExpanded ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={quickNote}
+                  onChange={(e) => setQuickNote(e.target.value)}
+                  placeholder="Quick note... (Ctrl+Enter to save)"
+                  rows={3}
+                  onKeyDown={handleKeyDown}
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsExpanded(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={handleSubmit}
+                    disabled={!quickNote.trim()}
+                  >
+                    Add Note
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Input
+                value={quickNote}
+                onChange={(e) => setQuickNote(e.target.value)}
+                placeholder="Quick note..."
+                onFocus={() => setIsExpanded(true)}
+                className="bg-muted/50"
+              />
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function CalendarNotesCard() {
   const LS_KEY = "svh_day_diary_v1";
   const [date, setDate] = useState<Date>(new Date());
@@ -136,6 +241,19 @@ function CalendarNotesCard() {
   const key = format(date, "yyyy-MM-dd");
   const [text, setText] = useState<string>(diary[key]?.text || "");
   const [saving, setSaving] = useState<boolean>(false);
+
+  // Listen for storage events to update when quick notes are added
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const updated = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+        setDiary(updated);
+      } catch {}
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Persist entire diary when changed
   useEffect(() => {

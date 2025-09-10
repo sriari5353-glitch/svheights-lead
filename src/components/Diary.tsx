@@ -8,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
 import { BookOpen, Calendar as CalendarIcon, List } from "lucide-react";
 import { format } from "date-fns";
+import QuickNoteCreate from "./QuickNoteCreate";
 
 interface DiaryEntry {
   id: string;
@@ -42,6 +43,19 @@ export default function Diary() {
       fetchEntryForDate(selectedDate);
     }
   }, [selectedDate, user]);
+
+  // Listen for diary updates from quick notes
+  useEffect(() => {
+    const handleDiaryUpdate = () => {
+      if (user && selectedDate) {
+        fetchEntryForDate(selectedDate);
+        fetchAllEntries();
+      }
+    };
+
+    window.addEventListener('diaryUpdated', handleDiaryUpdate);
+    return () => window.removeEventListener('diaryUpdated', handleDiaryUpdate);
+  }, [user, selectedDate]);
 
   async function fetchAllEntries() {
     if (!user) return;
@@ -158,6 +172,7 @@ export default function Diary() {
 
   return (
     <div className="space-y-4">
+      <QuickNoteCreate />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

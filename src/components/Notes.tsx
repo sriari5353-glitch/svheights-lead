@@ -6,8 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, Plus, Edit, Search, FileText } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trash2, Plus, Edit, Search, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useCRM } from "@/context/CRMContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -16,22 +19,26 @@ interface Note {
   id: string;
   title: string;
   content: string;
+  contact_id?: string;
   created_at: string;
   updated_at: string;
 }
 
 export default function Notes() {
   const { user } = useAuth();
+  const { leads } = useCRM();
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [newNoteDialog, setNewNoteDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   
   // Form states
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [selectedContactId, setSelectedContactId] = useState<string>("");
 
   // Auto-save timeout
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -64,19 +71,33 @@ export default function Notes() {
     fetchNotes();
   }, [fetchNotes]);
 
+  // Format content with bullet points and forward arrows
+  const formatContent = (text: string) => {
+    if (!text.trim()) return "";
+    
+    return text
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => line.startsWith('➤') ? line : `➤ ${line}`)
+      .join('\n');
+  };
+
   // Auto-save functionality
   const saveNote = useCallback(async (noteId?: string) => {
     if (!user || !title.trim()) return;
 
     setSaving(true);
     try {
+      const formattedContent = formatContent(content);
+      
       if (noteId) {
         // Update existing note
         const { error } = await supabase
           .from("notes")
           .update({
             title: title.trim(),
-            content: content.trim(),
+            content: formattedContent,
             updated_at: new Date().toISOString(),
           })
           .eq("id", noteId)
@@ -87,7 +108,7 @@ export default function Notes() {
         // Update local state
         setNotes(prev => prev.map(note => 
           note.id === noteId 
-            ? { ...note, title: title.trim(), content: content.trim(), updated_at: new Date().toISOString() }
+            ? { ...note, title: title.trim(), content: formattedContent, updated_at: new Date().toISOString() }
             : note
         ));
 
@@ -95,19 +116,25 @@ export default function Notes() {
           setSelectedNote(prev => prev ? { 
             ...prev, 
             title: title.trim(), 
-            content: content.trim(), 
+            content: formattedContent, 
             updated_at: new Date().toISOString() 
           } : null);
         }
       } else {
-        // Create new note
+        // Create new note with contact reference
+        const noteData: any = {
+          user_id: user.id,
+          title: title.trim(),
+          content: formattedContent,
+        };
+        
+        if (selectedContactId) {
+          noteData.contact_id = selectedContactId;
+        }
+
         const { data, error } = await supabase
           .from("notes")
-          .insert({
-            user_id: user.id,
-            title: title.trim(),
-            content: content.trim(),
-          })
+          .insert(noteData)
           .select()
           .single();
 
@@ -131,7 +158,7 @@ export default function Notes() {
     } finally {
       setSaving(false);
     }
-  }, [user, title, content, selectedNote]);
+  }, [user, title, content, selectedNote, selectedContactId]);
 
   // Auto-save when content changes
   useEffect(() => {
@@ -154,36 +181,39 @@ export default function Notes() {
     };
   }, [title, content, selectedNote, saveNote]);
 
-  // Delete note
-  const deleteNote = async (noteId: string) => {
-    if (!user) return;
+  // Delete selected notes
+  const deleteSelectedNotes = async () => {
+    if (!user || selectedNotes.size === 0) return;
 
     try {
+      const noteIds = Array.from(selectedNotes);
       const { error } = await supabase
         .from("notes")
         .delete()
-        .eq("id", noteId)
+        .in("id", noteIds)
         .eq("user_id", user.id);
 
       if (error) throw error;
 
-      setNotes(prev => prev.filter(note => note.id !== noteId));
+      setNotes(prev => prev.filter(note => !selectedNotes.has(note.id)));
       
-      if (selectedNote?.id === noteId) {
+      if (selectedNote && selectedNotes.has(selectedNote.id)) {
         setSelectedNote(null);
         setTitle("");
         setContent("");
       }
 
+      setSelectedNotes(new Set());
+
       toast({
-        title: "Note deleted",
-        description: "Note has been deleted successfully",
+        title: "Notes deleted",
+        description: `${noteIds.length} note(s) deleted successfully`,
       });
     } catch (error) {
-      console.error("Error deleting note:", error);
+      console.error("Error deleting notes:", error);
       toast({
         title: "Error",
-        description: "Failed to delete note",
+        description: "Failed to delete notes",
         variant: "destructive",
       });
     }
@@ -202,6 +232,7 @@ export default function Notes() {
     setSelectedNote(null);
     setTitle("");
     setContent("");
+    setSelectedContactId("");
     setNewNoteDialog(true);
     setIsEditing(true);
   };
@@ -211,6 +242,38 @@ export default function Notes() {
     await saveNote();
     setNewNoteDialog(false);
     setIsEditing(false);
+    setSelectedContactId("");
+  };
+
+  // Toggle note selection
+  const toggleNoteSelection = (noteId: string) => {
+    setSelectedNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all filtered notes
+  const selectAllNotes = () => {
+    const allIds = new Set(filteredNotes.map(note => note.id));
+    setSelectedNotes(allIds);
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedNotes(new Set());
+  };
+
+  // Get contact name by ID
+  const getContactName = (contactId?: string) => {
+    if (!contactId) return null;
+    const contact = leads.find(lead => lead.id === contactId);
+    return contact ? contact.name : "Unknown Contact";
   };
 
   // Filter notes based on search
@@ -256,7 +319,33 @@ export default function Notes() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1"
               />
+              {selectedNotes.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={deleteSelectedNotes}
+                  className="shrink-0"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete ({selectedNotes.size})
+                </Button>
+              )}
             </div>
+            {filteredNotes.length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <Checkbox
+                  checked={selectedNotes.size === filteredNotes.length && filteredNotes.length > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      selectAllNotes();
+                    } else {
+                      clearSelection();
+                    }
+                  }}
+                />
+                <span className="text-sm text-muted-foreground">Select all</span>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-96">
@@ -269,32 +358,49 @@ export default function Notes() {
                   {filteredNotes.map((note) => (
                     <div
                       key={note.id}
-                      className={`p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
+                      className={`p-3 border-b transition-colors ${
                         selectedNote?.id === note.id ? "bg-muted" : ""
                       }`}
-                      onClick={() => selectNote(note)}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{note.title}</h4>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                            {note.content || "No content"}
-                          </p>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedNotes.has(note.id)}
+                          onCheckedChange={() => toggleNoteSelection(note.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                          onClick={() => selectNote(note)}
+                        >
+                          <div className="flex items-center gap-1">
+                            <ChevronRight className="h-4 w-4 text-primary" />
+                            <h4 className="font-medium text-sm truncate">{note.title}</h4>
+                          </div>
+                          {note.contact_id && (
+                            <p className="text-xs text-primary mt-1">
+                              Contact: {getContactName(note.contact_id)}
+                            </p>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                            {note.content ? (
+                              <div className="max-h-12 overflow-hidden">
+                                {note.content.split('\n').slice(0, 2).map((line, idx) => (
+                                  <div key={idx} className="flex items-center gap-1">
+                                    {line.startsWith('➤') ? line : `➤ ${line}`}
+                                  </div>
+                                ))}
+                                {note.content.split('\n').length > 2 && (
+                                  <span className="text-muted-foreground">...</span>
+                                )}
+                              </div>
+                            ) : (
+                              "No content"
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {format(new Date(note.updated_at), "MMM d, yyyy")}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 ml-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteNote(note.id);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -368,10 +474,24 @@ export default function Notes() {
                 ) : (
                   <div className="space-y-4">
                     <h3 className="text-xl font-semibold">{selectedNote.title}</h3>
+                    {selectedNote.contact_id && (
+                      <div className="text-sm text-primary bg-primary/10 px-3 py-2 rounded-lg">
+                        Contact: {getContactName(selectedNote.contact_id)}
+                      </div>
+                    )}
                     <div className="prose prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {selectedNote.content || "No content"}
-                      </pre>
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed space-y-1">
+                        {selectedNote.content ? (
+                          selectedNote.content.split('\n').map((line, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <ChevronRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                              <span>{line.replace(/^➤\s*/, '')}</span>
+                            </div>
+                          ))
+                        ) : (
+                          "No content"
+                        )}
+                      </div>
                     </div>
                     <div className="text-sm text-muted-foreground border-t pt-4">
                       <p>Created: {format(new Date(selectedNote.created_at), "PPP 'at' p")}</p>
@@ -403,12 +523,34 @@ export default function Notes() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
-            <Textarea
-              placeholder="Write your note here..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={8}
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Link to Contact (Optional)</label>
+              <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select contact..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No contact</SelectItem>
+                  {leads.map((lead) => (
+                    <SelectItem key={lead.id} value={lead.id}>
+                      {lead.name} - {lead.phone}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Content</label>
+              <Textarea
+                placeholder="Write your note points here... Each line will be formatted as a bullet point with forward arrow"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={8}
+              />
+              <p className="text-xs text-muted-foreground">
+                Tip: Each line will be formatted with ➤ bullet points automatically
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button

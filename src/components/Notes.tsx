@@ -34,6 +34,7 @@ export default function Notes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [saving, setSaving] = useState(false);
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   
   // Form states
   const [title, setTitle] = useState("");
@@ -204,6 +205,7 @@ export default function Notes() {
       }
 
       setSelectedNotes(new Set());
+      setIsSelectionMode(false);
 
       toast({
         title: "Notes deleted",
@@ -216,6 +218,14 @@ export default function Notes() {
         description: "Failed to delete notes",
         variant: "destructive",
       });
+    }
+  };
+
+  // Toggle selection mode
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    if (isSelectionMode) {
+      setSelectedNotes(new Set());
     }
   };
 
@@ -319,31 +329,48 @@ export default function Notes() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1"
               />
-              {selectedNotes.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={deleteSelectedNotes}
-                  className="shrink-0"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete ({selectedNotes.size})
-                </Button>
-              )}
+              <Button
+                variant={isSelectionMode ? "destructive" : "outline"}
+                size="sm"
+                onClick={toggleSelectionMode}
+                className="shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
-            {filteredNotes.length > 0 && (
-              <div className="flex items-center gap-2 mt-2">
-                <Checkbox
-                  checked={selectedNotes.size === filteredNotes.length && filteredNotes.length > 0}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      selectAllNotes();
-                    } else {
-                      clearSelection();
-                    }
-                  }}
-                />
-                <span className="text-sm text-muted-foreground">Select all</span>
+            {isSelectionMode && (
+              <div className="space-y-2 mt-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedNotes.size === filteredNotes.length && filteredNotes.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        selectAllNotes();
+                      } else {
+                        clearSelection();
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">Select all</span>
+                </div>
+                {selectedNotes.size > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={deleteSelectedNotes}
+                    >
+                      Delete Selected ({selectedNotes.size})
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedNotes(new Set())}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardHeader>
@@ -363,14 +390,16 @@ export default function Notes() {
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedNotes.has(note.id)}
-                          onCheckedChange={() => toggleNoteSelection(note.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
+                        {isSelectionMode && (
+                          <Checkbox
+                            checked={selectedNotes.has(note.id)}
+                            onCheckedChange={() => toggleNoteSelection(note.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        )}
                         <div 
                           className="flex-1 min-w-0 cursor-pointer hover:bg-muted/50 p-1 rounded"
-                          onClick={() => selectNote(note)}
+                          onClick={() => !isSelectionMode && selectNote(note)}
                         >
                           <div className="flex items-center gap-1">
                             <ChevronRight className="h-4 w-4 text-primary" />

@@ -244,61 +244,129 @@ export default function Diary() {
                   className="rounded-md border"
                 />
               </div>
-              <div className="space-y-4">
-                <div className="text-sm font-medium">
-                  Entry for {format(selectedDate, 'PPP')}
-                </div>
-                <Textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={12}
-                  placeholder={`Write your thoughts for ${format(selectedDate, 'PPP')}...`}
-                  disabled={loading || saving}
-                  className="resize-none"
-                />
-                {selectedContactId && (
-                  <div className="text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      Linked to: {contacts.find(c => c.id === selectedContactId)?.name} 
-                      ({contacts.find(c => c.id === selectedContactId)?.phone})
-                    </span>
+                <div className="space-y-4">
+                  <div className="text-sm font-medium">
+                    Entry for {format(selectedDate, 'PPP')}
                   </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {content.length} characters
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <Select 
-                      value={selectedContactId || "none"} 
-                      onValueChange={(value) => setSelectedContactId(value === "none" ? "" : value)}
-                    >
-                      <SelectTrigger className="w-48">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <SelectValue placeholder="Link to contact" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No contact</SelectItem>
-                        {contacts.map((contact) => (
-                          <SelectItem key={contact.id} value={contact.id}>
-                            {contact.name} ({contact.phone})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      onClick={saveDiary} 
+                  <div className="space-y-2">
+                    <Textarea
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const textarea = e.currentTarget;
+                          const cursorPos = textarea.selectionStart;
+                          const textBefore = content.substring(0, cursorPos);
+                          const textAfter = content.substring(cursorPos);
+                          const newContent = textBefore + '\n• ' + textAfter;
+                          setContent(newContent);
+                          
+                          // Set cursor position after the bullet
+                          setTimeout(() => {
+                            textarea.selectionStart = textarea.selectionEnd = cursorPos + 3;
+                          }, 0);
+                        }
+                      }}
+                      rows={12}
+                      placeholder={`• Write your thoughts for ${format(selectedDate, 'PPP')}...`}
                       disabled={loading || saving}
-                      variant="hero"
-                    >
-                      {saving ? "Saving..." : "Save Diary"}
-                    </Button>
+                      className="resize-none"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Select 
+                        value="" 
+                        onValueChange={(contactId) => {
+                          const contact = contacts.find(c => c.id === contactId);
+                          if (contact) {
+                            const contactText = `${contact.name} (${contact.phone})`;
+                            const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                            if (textarea) {
+                              const cursorPos = textarea.selectionStart;
+                              const textBefore = content.substring(0, cursorPos);
+                              const textAfter = content.substring(cursorPos);
+                              const newContent = textBefore + contactText + textAfter;
+                              setContent(newContent);
+                              
+                              // Set cursor position after the inserted contact
+                              setTimeout(() => {
+                                textarea.selectionStart = textarea.selectionEnd = cursorPos + contactText.length;
+                                textarea.focus();
+                              }, 0);
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-48">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <SelectValue placeholder="Insert contact" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id}>
+                              {contact.name} ({contact.phone})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (!content.startsWith('• ')) {
+                            setContent('• ' + content);
+                          }
+                        }}
+                      >
+                        Add Bullet
+                      </Button>
+                    </div>
+                  </div>
+                  {selectedContactId && (
+                    <div className="text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        Linked to: {contacts.find(c => c.id === selectedContactId)?.name} 
+                        ({contacts.find(c => c.id === selectedContactId)?.phone})
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {content.length} characters
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <Select 
+                        value={selectedContactId || "none"} 
+                        onValueChange={(value) => setSelectedContactId(value === "none" ? "" : value)}
+                      >
+                        <SelectTrigger className="w-48">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <SelectValue placeholder="Link to contact" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No contact</SelectItem>
+                          {contacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id}>
+                              {contact.name} ({contact.phone})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={saveDiary} 
+                        disabled={loading || saving}
+                        variant="hero"
+                      >
+                        {saving ? "Saving..." : "Save Diary"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
             </div>
           ) : (
             <div className="space-y-4">

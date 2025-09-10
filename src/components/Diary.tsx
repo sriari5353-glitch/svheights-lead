@@ -271,8 +271,8 @@ export default function Diary() {
                   </span>
                   <div className="flex items-center gap-3">
                     <Select 
-                      value={selectedContactId} 
-                      onValueChange={setSelectedContactId}
+                      value={selectedContactId || "none"} 
+                      onValueChange={(value) => setSelectedContactId(value === "none" ? "" : value)}
                     >
                       <SelectTrigger className="w-48">
                         <div className="flex items-center gap-2">
@@ -281,7 +281,7 @@ export default function Diary() {
                         </div>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No contact</SelectItem>
+                        <SelectItem value="none">No contact</SelectItem>
                         {contacts.map((contact) => (
                           <SelectItem key={contact.id} value={contact.id}>
                             {contact.name} ({contact.phone})

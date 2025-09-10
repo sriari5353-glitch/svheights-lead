@@ -39,7 +39,7 @@ export default function Notes() {
   // Form states
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [selectedContactId, setSelectedContactId] = useState<string>("");
+  const [selectedContactId, setSelectedContactId] = useState<string>("none");
 
   // Auto-save timeout
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -129,7 +129,7 @@ export default function Notes() {
           content: formattedContent,
         };
         
-        if (selectedContactId) {
+        if (selectedContactId && selectedContactId !== "none") {
           noteData.contact_id = selectedContactId;
         }
 
@@ -242,7 +242,7 @@ export default function Notes() {
     setSelectedNote(null);
     setTitle("");
     setContent("");
-    setSelectedContactId("");
+    setSelectedContactId("none");
     setNewNoteDialog(true);
     setIsEditing(true);
   };
@@ -252,7 +252,7 @@ export default function Notes() {
     await saveNote();
     setNewNoteDialog(false);
     setIsEditing(false);
-    setSelectedContactId("");
+    setSelectedContactId("none");
   };
 
   // Toggle note selection
@@ -559,7 +559,7 @@ export default function Notes() {
                   <SelectValue placeholder="Select contact..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No contact</SelectItem>
+                  <SelectItem value="none">No contact</SelectItem>
                   {leads.map((lead) => (
                     <SelectItem key={lead.id} value={lead.id}>
                       {lead.name} - {lead.phone}

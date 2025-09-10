@@ -98,6 +98,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lead_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string
@@ -145,6 +172,7 @@ export type Database = {
       }
       notes: {
         Row: {
+          contact_id: string | null
           content: string
           created_at: string
           id: string
@@ -153,6 +181,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          contact_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -161,6 +190,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          contact_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -168,7 +198,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

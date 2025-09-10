@@ -18,7 +18,6 @@ import { format } from "date-fns";
 interface Note {
   id: string;
   title: string;
-  content: string;
   contact_id?: string;
   created_at: string;
   updated_at: string;
@@ -38,7 +37,6 @@ export default function Notes() {
   
   // Form states
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [selectedContactId, setSelectedContactId] = useState<string>("none");
 
   // Auto-save timeout
@@ -72,17 +70,6 @@ export default function Notes() {
     fetchNotes();
   }, [fetchNotes]);
 
-  // Format content with bullet points and forward arrows
-  const formatContent = (text: string) => {
-    if (!text.trim()) return "";
-    
-    return text
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(line => line.startsWith('➤') ? line : `➤ ${line}`)
-      .join('\n');
-  };
 
   // Auto-save functionality
   const saveNote = useCallback(async (noteId?: string) => {
@@ -90,15 +77,12 @@ export default function Notes() {
 
     setSaving(true);
     try {
-      const formattedContent = formatContent(content);
-      
       if (noteId) {
         // Update existing note
         const { error } = await supabase
           .from("notes")
           .update({
             title: title.trim(),
-            content: formattedContent,
             updated_at: new Date().toISOString(),
           })
           .eq("id", noteId)
@@ -109,7 +93,7 @@ export default function Notes() {
         // Update local state
         setNotes(prev => prev.map(note => 
           note.id === noteId 
-            ? { ...note, title: title.trim(), content: formattedContent, updated_at: new Date().toISOString() }
+            ? { ...note, title: title.trim(), updated_at: new Date().toISOString() }
             : note
         ));
 
@@ -117,7 +101,6 @@ export default function Notes() {
           setSelectedNote(prev => prev ? { 
             ...prev, 
             title: title.trim(), 
-            content: formattedContent, 
             updated_at: new Date().toISOString() 
           } : null);
         }
@@ -126,7 +109,7 @@ export default function Notes() {
         const noteData: any = {
           user_id: user.id,
           title: title.trim(),
-          content: formattedContent,
+          content: '',
         };
         
         if (selectedContactId && selectedContactId !== "none") {
@@ -159,15 +142,15 @@ export default function Notes() {
     } finally {
       setSaving(false);
     }
-  }, [user, title, content, selectedNote, selectedContactId]);
+  }, [user, title, selectedNote, selectedContactId]);
 
-  // Auto-save when content changes
+  // Auto-save when title changes
   useEffect(() => {
     if (autoSaveTimeout) {
       clearTimeout(autoSaveTimeout);
     }
 
-    if (selectedNote && (title !== selectedNote.title || content !== selectedNote.content)) {
+    if (selectedNote && title !== selectedNote.title) {
       const timeout = setTimeout(() => {
         saveNote(selectedNote.id);
       }, 2000); // Auto-save after 2 seconds of inactivity
@@ -180,7 +163,7 @@ export default function Notes() {
         clearTimeout(autoSaveTimeout);
       }
     };
-  }, [title, content, selectedNote, saveNote]);
+  }, [title, selectedNote, saveNote]);
 
   // Delete selected notes
   const deleteSelectedNotes = async () => {
@@ -201,7 +184,6 @@ export default function Notes() {
       if (selectedNote && selectedNotes.has(selectedNote.id)) {
         setSelectedNote(null);
         setTitle("");
-        setContent("");
       }
 
       setSelectedNotes(new Set());
@@ -233,7 +215,6 @@ export default function Notes() {
   const selectNote = (note: Note) => {
     setSelectedNote(note);
     setTitle(note.title);
-    setContent(note.content);
     setIsEditing(false);
   };
 
@@ -241,7 +222,6 @@ export default function Notes() {
   const createNewNote = () => {
     setSelectedNote(null);
     setTitle("");
-    setContent("");
     setSelectedContactId("none");
     setNewNoteDialog(true);
     setIsEditing(true);
@@ -279,17 +259,16 @@ export default function Notes() {
     setSelectedNotes(new Set());
   };
 
-  // Get contact name by ID
-  const getContactName = (contactId?: string) => {
+  // Get contact name with phone by ID
+  const getContactNameWithPhone = (contactId?: string) => {
     if (!contactId) return null;
     const contact = leads.find(lead => lead.id === contactId);
-    return contact ? contact.name : "Unknown Contact";
+    return contact ? `${contact.name} - ${contact.phone}` : "Unknown Contact";
   };
 
   // Filter notes based on search
   const filteredNotes = notes.filter(note =>
-    note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.content.toLowerCase().includes(searchTerm.toLowerCase())
+    note.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (!user) {
@@ -405,30 +384,14 @@ export default function Notes() {
                             <ChevronRight className="h-4 w-4 text-primary" />
                             <h4 className="font-medium text-sm truncate">{note.title}</h4>
                           </div>
-                          {note.contact_id && (
-                            <p className="text-xs text-primary mt-1">
-                              Contact: {getContactName(note.contact_id)}
-                            </p>
-                          )}
-                          <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                            {note.content ? (
-                              <div className="max-h-12 overflow-hidden">
-                                {note.content.split('\n').slice(0, 2).map((line, idx) => (
-                                  <div key={idx} className="flex items-center gap-1">
-                                    {line.startsWith('➤') ? line : `➤ ${line}`}
-                                  </div>
-                                ))}
-                                {note.content.split('\n').length > 2 && (
-                                  <span className="text-muted-foreground">...</span>
-                                )}
-                              </div>
-                            ) : (
-                              "No content"
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(note.updated_at), "MMM d, yyyy")}
-                          </p>
+                           {note.contact_id && (
+                             <p className="text-xs text-primary mt-1">
+                               Contact: {getContactNameWithPhone(note.contact_id)}
+                             </p>
+                           )}
+                           <p className="text-xs text-muted-foreground mt-1">
+                             {format(new Date(note.updated_at), "MMM d, yyyy")}
+                           </p>
                         </div>
                       </div>
                     </div>
@@ -464,70 +427,48 @@ export default function Notes() {
           <CardContent className="space-y-4">
             {selectedNote ? (
               <>
-                {isEditing ? (
-                  <>
-                    <Input
-                      placeholder="Note title..."
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="font-medium"
-                    />
-                    <Textarea
-                      placeholder="Write your note here..."
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      rows={15}
-                      className="resize-none"
-                    />
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        Auto-saves every 2 seconds
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setIsEditing(false);
-                            setTitle(selectedNote.title);
-                            setContent(selectedNote.content);
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button onClick={() => saveNote(selectedNote.id)}>
-                          Save Now
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-semibold">{selectedNote.title}</h3>
-                    {selectedNote.contact_id && (
-                      <div className="text-sm text-primary bg-primary/10 px-3 py-2 rounded-lg">
-                        Contact: {getContactName(selectedNote.contact_id)}
-                      </div>
-                    )}
-                    <div className="prose prose-sm max-w-none">
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed space-y-1">
-                        {selectedNote.content ? (
-                          selectedNote.content.split('\n').map((line, idx) => (
-                            <div key={idx} className="flex items-start gap-2">
-                              <ChevronRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                              <span>{line.replace(/^➤\s*/, '')}</span>
-                            </div>
-                          ))
-                        ) : (
-                          "No content"
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground border-t pt-4">
-                      <p>Created: {format(new Date(selectedNote.created_at), "PPP 'at' p")}</p>
-                      <p>Last updated: {format(new Date(selectedNote.updated_at), "PPP 'at' p")}</p>
-                    </div>
-                  </div>
-                )}
+                 {isEditing ? (
+                   <>
+                     <Input
+                       placeholder="Note title..."
+                       value={title}
+                       onChange={(e) => setTitle(e.target.value)}
+                       className="font-medium"
+                     />
+                     <div className="flex items-center justify-between">
+                       <div className="text-sm text-muted-foreground">
+                         Auto-saves every 2 seconds
+                       </div>
+                       <div className="flex gap-2">
+                         <Button
+                           variant="outline"
+                           onClick={() => {
+                             setIsEditing(false);
+                             setTitle(selectedNote.title);
+                           }}
+                         >
+                           Cancel
+                         </Button>
+                         <Button onClick={() => saveNote(selectedNote.id)}>
+                           Save Now
+                         </Button>
+                       </div>
+                     </div>
+                   </>
+                 ) : (
+                   <div className="space-y-4">
+                     <h3 className="text-xl font-semibold">{selectedNote.title}</h3>
+                     {selectedNote.contact_id && (
+                       <div className="text-sm text-primary bg-primary/10 px-3 py-2 rounded-lg">
+                         Contact: {getContactNameWithPhone(selectedNote.contact_id)}
+                       </div>
+                     )}
+                     <div className="text-sm text-muted-foreground border-t pt-4">
+                       <p>Created: {format(new Date(selectedNote.created_at), "PPP 'at' p")}</p>
+                       <p>Last updated: {format(new Date(selectedNote.updated_at), "PPP 'at' p")}</p>
+                     </div>
+                   </div>
+                 )}
               </>
             ) : (
               <div className="text-center text-muted-foreground py-12">
@@ -568,18 +509,6 @@ export default function Notes() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Content</label>
-              <Textarea
-                placeholder="Write your note points here... Each line will be formatted as a bullet point with forward arrow"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={8}
-              />
-              <p className="text-xs text-muted-foreground">
-                Tip: Each line will be formatted with ➤ bullet points automatically
-              </p>
-            </div>
           </div>
           <DialogFooter>
             <Button
@@ -587,7 +516,6 @@ export default function Notes() {
               onClick={() => {
                 setNewNoteDialog(false);
                 setTitle("");
-                setContent("");
               }}
             >
               Cancel

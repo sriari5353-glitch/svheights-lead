@@ -584,7 +584,7 @@ function NotesCalendarDialog({
 
           <div className="flex gap-2">
             <Select 
-              value={leads.find(l => l.id === leadId)?.feedback || ""} 
+              value={leads.find(l => l.id === leadId)?.feedback || undefined} 
               onValueChange={(value) => {
                 const lead = leads.find(l => l.id === leadId);
                 if (lead) {
@@ -603,7 +603,7 @@ function NotesCalendarDialog({
               </SelectContent>
             </Select>
             <Select 
-              value={leads.find(l => l.id === leadId)?.status || ""} 
+              value={leads.find(l => l.id === leadId)?.status || undefined} 
               onValueChange={(value) => {
                 const lead = leads.find(l => l.id === leadId);
                 if (lead) {
@@ -626,7 +626,7 @@ function NotesCalendarDialog({
           {selectedDate && (
             <div className="flex gap-2">
               <Select 
-                value={leads.find(l => l.id === leadId)?.feedback || ""} 
+                value={leads.find(l => l.id === leadId)?.feedback || undefined} 
                 onValueChange={(value) => {
                   const lead = leads.find(l => l.id === leadId);
                   if (lead) {
@@ -645,7 +645,7 @@ function NotesCalendarDialog({
                 </SelectContent>
               </Select>
               <Select 
-                value={leads.find(l => l.id === leadId)?.status || ""} 
+                value={leads.find(l => l.id === leadId)?.status || undefined} 
                 onValueChange={(value) => {
                   const lead = leads.find(l => l.id === leadId);
                   if (lead) {

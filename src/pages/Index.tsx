@@ -857,7 +857,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
               </TableHeader>
               <TableBody>
                  {filtered.map((l) => (
-                   <>
+                   <React.Fragment key={l.id}>
                      <TableRow key={l.id}>
                        <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
                          <TableCell className="font-medium">
@@ -965,7 +965,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                          </TableCell>
                        </TableRow>
                      )}
-                   </>
+                   </React.Fragment>
                  ))}
                  {filtered.length === 0 && (
                    <TableRow>

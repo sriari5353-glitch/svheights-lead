@@ -591,6 +591,20 @@ function NotesCalendarDialog({
                 ))}
               </SelectContent>
             </Select>
+            
+            <div className="flex items-center">
+              <StarRating
+                rating={leads.find(l => l.id === leadId)?.rating || 0}
+                onRatingChange={(rating) => {
+                  const lead = leads.find(l => l.id === leadId);
+                  if (lead) {
+                    updateLead({ ...lead, rating });
+                    toast({ title: "Rating updated", description: `Rated ${rating}/5 stars` });
+                  }
+                }}
+                size="sm"
+              />
+            </div>
           </div>
 
           {selectedDate && (

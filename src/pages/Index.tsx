@@ -910,18 +910,18 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                                 >
                                   <MessageCircle className="h-4 w-4 text-green-600" />
                                 </button>
-                                 <button 
-                                   onClick={() => setExpandedRows(prev => ({ ...prev, [l.id]: !prev[l.id] }))}
-                                   className="p-1 hover:bg-muted rounded transition-colors ml-1 flex items-center gap-1"
-                                   title="Show details"
-                                 >
-                                   <ChevronDown className={`h-4 w-4 transition-transform ${expandedRows[l.id] ? 'rotate-180' : ''}`} />
-                                   {l.rating && l.rating > 0 && (
-                                     <span className="text-xs font-medium text-yellow-600 bg-yellow-50 px-1 rounded">
-                                       {l.rating}
-                                     </span>
-                                   )}
-                                 </button>
+                                  <button 
+                                    onClick={() => setExpandedRows(prev => ({ ...prev, [l.id]: !prev[l.id] }))}
+                                    className="p-1 hover:bg-muted rounded transition-colors ml-1 flex items-center gap-1"
+                                    title="Show details"
+                                  >
+                                    <ChevronDown className={`h-4 w-4 transition-transform ${expandedRows[l.id] ? 'rotate-180' : ''}`} />
+                                    {l.rating && l.rating > 0 && (
+                                      <span className="text-xs font-bold text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded-full border border-yellow-200">
+                                        {l.rating}
+                                      </span>
+                                    )}
+                                  </button>
                               </div>
                             </div>
                           </div>

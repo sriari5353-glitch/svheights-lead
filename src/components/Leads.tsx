@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Phone, Edit, Trash2, Calendar, MessageSquare } from "lucide-react";
 import { LeadForm } from "./LeadForm";
 import CalendarNotes from "./CalendarNotes";
+import StarRating from "./ui/star-rating";
 import { Lead } from "@/types/crm";
 
 const Leads = () => {
-  const { leads, deleteLead, sendWhatsAppNow } = useCRM();
+  const { leads, deleteLead, sendWhatsAppNow, updateLead } = useCRM();
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [selectedLeadForNotes, setSelectedLeadForNotes] = useState<Lead | null>(null);
 
@@ -30,6 +31,16 @@ const Leads = () => {
 
   const handleWhatsApp = (lead: Lead) => {
     sendWhatsAppNow([lead.id], "Hello! Following up on our conversation.");
+  };
+
+  const handleRatingChange = (leadId: string, newRating: number) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      updateLead({
+        ...lead,
+        rating: newRating
+      });
+    }
   };
 
   return (
@@ -67,10 +78,15 @@ const Leads = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
                   <Badge className={`${getStatusColor(lead.status)} text-white`}>
                     {lead.status}
                   </Badge>
+                  <StarRating
+                    rating={lead.rating || 0}
+                    onRatingChange={(rating) => handleRatingChange(lead.id, rating)}
+                    size="sm"
+                  />
                 </div>
               </div>
             </CardHeader>

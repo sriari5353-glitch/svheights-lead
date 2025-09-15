@@ -12,6 +12,7 @@ export interface Lead {
   status: LeadStatus;
   notes: string;
   feedback: Feedback;
+  rating?: number; // 0-5 star rating
   leadDate?: string; // ISO date string, optional
   createdAt: string; // ISO
   updatedAt: string; // ISO

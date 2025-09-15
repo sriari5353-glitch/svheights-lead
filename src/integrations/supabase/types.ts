@@ -146,6 +146,7 @@ export type Database = {
           name: string
           notes: string
           phone: string
+          rating: number | null
           source: string
           source_details: string | null
           status: string
@@ -160,6 +161,7 @@ export type Database = {
           name: string
           notes?: string
           phone: string
+          rating?: number | null
           source: string
           source_details?: string | null
           status: string
@@ -174,6 +176,7 @@ export type Database = {
           name?: string
           notes?: string
           phone?: string
+          rating?: number | null
           source?: string
           source_details?: string | null
           status?: string

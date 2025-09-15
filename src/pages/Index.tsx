@@ -650,6 +650,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   const [search, setSearch] = useState("");
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
+  const [ratingFilter, setRatingFilter] = useState<string | undefined>(undefined);
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
@@ -678,9 +679,23 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
       const qMatch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q);
       const srcMatch = !src || l.source === src;
       const fbMatch = !fb || l.feedback === fb;
-      return qMatch && srcMatch && fbMatch;
+      const ratingMatch = !ratingFilter || (() => {
+        const rating = l.rating || 0;
+        switch (ratingFilter) {
+          case "1": return rating === 1;
+          case "2": return rating === 2;
+          case "3": return rating === 3;
+          case "4": return rating === 4;
+          case "5": return rating === 5;
+          case "3+": return rating >= 3;
+          case "4+": return rating >= 4;
+          case "unrated": return rating === 0;
+          default: return true;
+        }
+      })();
+      return qMatch && srcMatch && fbMatch && ratingMatch;
     });
-  }, [leads, search, src, fb]);
+  }, [leads, search, src, fb, ratingFilter]);
 
   const allSelected = filtered.length > 0 && filtered.every((l) => selection[l.id]);
   const toggleAll = (v: boolean) => {
@@ -750,6 +765,20 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
               {FEEDBACK_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v === "ALL" ? undefined : v)}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Rating" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Ratings</SelectItem>
+              <SelectItem value="unrated">Unrated (0)</SelectItem>
+              <SelectItem value="1">⭐ 1 Star</SelectItem>
+              <SelectItem value="2">⭐⭐ 2 Stars</SelectItem>
+              <SelectItem value="3">⭐⭐⭐ 3 Stars</SelectItem>
+              <SelectItem value="4">⭐⭐⭐⭐ 4 Stars</SelectItem>
+              <SelectItem value="5">⭐⭐⭐⭐⭐ 5 Stars</SelectItem>
+              <SelectItem value="3+">⭐⭐⭐+ 3+ Stars</SelectItem>
+              <SelectItem value="4+">⭐⭐⭐⭐+ 4+ Stars</SelectItem>
             </SelectContent>
           </Select>
         </div>

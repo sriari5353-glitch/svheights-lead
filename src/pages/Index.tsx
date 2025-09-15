@@ -30,7 +30,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Options
 const SOURCE_OPTIONS: LeadSource[] = ["Walk-in", "Referral", "Social Media", "Other"];
-const STATUS_OPTIONS: LeadStatus[] = ["New Lead", "Prospect", "Negotiation", "Hot Lead", "Closed", "Lost"];
 const FEEDBACK_OPTIONS: Feedback[] = ["Prospect", "Follow-up", "Visited", "Rejected"];
 
 function useSEO() {
@@ -93,17 +92,6 @@ function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL"
   );
 }
 
-function getStatusBadge(status: LeadStatus) {
-  const map: Record<LeadStatus, any> = {
-    "New Lead": "default",
-    Prospect: "secondary",
-    Negotiation: "secondary", 
-    "Hot Lead": "default",
-    Closed: "secondary",
-    Lost: "destructive",
-  };
-  return <Badge variant={map[status]}>{status}</Badge>;
-}
 
 function getFeedbackBadge(feedback?: Feedback) {
   if (!feedback) return null;
@@ -603,25 +591,6 @@ function NotesCalendarDialog({
                 ))}
               </SelectContent>
             </Select>
-            <Select 
-              value={leads.find(l => l.id === leadId)?.status || undefined} 
-              onValueChange={(value) => {
-                const lead = leads.find(l => l.id === leadId);
-                if (lead) {
-                  updateLead({ ...lead, status: value as LeadStatus });
-                  toast({ title: "Status updated", description: `Updated to ${value}` });
-                }
-              }}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {selectedDate && (
@@ -641,25 +610,6 @@ function NotesCalendarDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {FEEDBACK_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select 
-                value={leads.find(l => l.id === leadId)?.status || undefined} 
-                onValueChange={(value) => {
-                  const lead = leads.find(l => l.id === leadId);
-                  if (lead) {
-                    updateLead({ ...lead, status: value as LeadStatus });
-                    toast({ title: "Status updated", description: `Updated to ${value}` });
-                  }
-                }}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((option) => (
                     <SelectItem key={option} value={option}>{option}</SelectItem>
                   ))}
                 </SelectContent>
@@ -686,7 +636,6 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   const [search, setSearch] = useState("");
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
-  const [st, setSt] = useState<LeadStatus | undefined>(undefined);
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
@@ -715,10 +664,9 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
       const qMatch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q);
       const srcMatch = !src || l.source === src;
       const fbMatch = !fb || l.feedback === fb;
-      const stMatch = !st || l.status === st;
-      return qMatch && srcMatch && fbMatch && stMatch;
+      return qMatch && srcMatch && fbMatch;
     });
-  }, [leads, search, src, fb, st]);
+  }, [leads, search, src, fb]);
 
   const allSelected = filtered.length > 0 && filtered.every((l) => selection[l.id]);
   const toggleAll = (v: boolean) => {
@@ -786,15 +734,6 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
             <SelectContent>
               <SelectItem value="ALL">All</SelectItem>
               {FEEDBACK_OPTIONS.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={st} onValueChange={(v) => setSt(v === "ALL" ? undefined : (v as LeadStatus))}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All</SelectItem>
-              {STATUS_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>

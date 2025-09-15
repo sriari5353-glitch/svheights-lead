@@ -44,7 +44,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
     phone: initialData?.phone || '',
     source: initialData?.source || 'Walk-in' as LeadSource,
     sourceDetails: initialData?.sourceDetails || '',
-    status: initialData?.status || 'New Lead' as LeadStatus,
+    
     notes: initialData?.notes || '',
     feedback: initialData?.feedback || '' as Feedback,
   });
@@ -117,6 +117,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
 
     const leadData = {
       ...formData,
+      status: 'New Lead' as LeadStatus, // Default status since we removed the UI
       leadDate: leadDateString,
     };
 
@@ -139,7 +140,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         phone: '',
         source: 'Walk-in',
         sourceDetails: '',
-        status: 'New Lead',
         notes: '',
         feedback: '',
       });
@@ -229,25 +229,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         />
       </div>
 
-      <div>
-        <Label htmlFor="status">Status</Label>
-        <Select
-          value={formData.status}
-          onValueChange={(value: LeadStatus) => setFormData(prev => ({ ...prev, status: value }))}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="New Lead">New Lead</SelectItem>
-            <SelectItem value="Prospect">Prospect</SelectItem>
-            <SelectItem value="Negotiation">Negotiation</SelectItem>
-            <SelectItem value="Hot Lead">Hot Lead</SelectItem>
-            <SelectItem value="Closed">Closed</SelectItem>
-            <SelectItem value="Lost">Lost</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
       <div>
         <Label htmlFor="feedback">Feedback</Label>

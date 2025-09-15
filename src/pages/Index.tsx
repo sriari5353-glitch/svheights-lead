@@ -25,6 +25,7 @@ import Notes from "@/components/Notes";
 import RemindersSection from "@/components/RemindersSection";
 import { LeadForm } from "@/components/LeadForm";
 import DataUpload, { DownloadDataButton } from "@/components/DataUpload";
+import StarRating from "@/components/ui/star-rating";
 import { supabase } from "@/integrations/supabase/client";
 
 // Options
@@ -689,6 +690,16 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
+  const handleRatingChange = (leadId: string, newRating: number) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      updateLead({
+        ...lead,
+        rating: newRating
+      });
+    }
+  };
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | undefined>(undefined);
 
@@ -921,7 +932,13 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                             />
                           </div>
                         </TableCell>
-                       <TableCell className="hidden lg:table-cell">{getStatusBadge(l.status)}</TableCell>
+                       <TableCell className="hidden lg:table-cell">
+                         <StarRating
+                           rating={l.rating || 0}
+                           onRatingChange={(rating) => handleRatingChange(l.id, rating)}
+                           size="sm"
+                         />
+                       </TableCell>
                        <TableCell className="hidden lg:table-cell">{getFeedbackBadge(l.feedback)}</TableCell>
                        <TableCell className="text-right space-x-2">
                          <Button variant="outline" size="sm" onClick={() => { setEditing(l); setOpen(true); }}>Edit</Button>

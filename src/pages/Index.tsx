@@ -850,7 +850,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                      </div>
                    </TableHead>
-                   <TableHead className="hidden lg:table-cell">Status</TableHead>
+                   <TableHead className="hidden lg:table-cell">Rating</TableHead>
                    <TableHead className="hidden lg:table-cell">Feedback</TableHead>
                    <TableHead className="text-right">Actions</TableHead>
                  </TableRow>

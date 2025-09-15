@@ -850,7 +850,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                      </div>
                    </TableHead>
-                   <TableHead className="table-cell">Rating</TableHead>
+                   <TableHead className="hidden lg:table-cell">Rating</TableHead>
                    <TableHead className="hidden lg:table-cell">Feedback</TableHead>
                    <TableHead className="text-right">Actions</TableHead>
                  </TableRow>
@@ -932,7 +932,7 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
                             />
                           </div>
                         </TableCell>
-                       <TableCell className="table-cell">
+                       <TableCell className="hidden lg:table-cell">
                          <StarRating
                            rating={l.rating || 0}
                            onRatingChange={(rating) => handleRatingChange(l.id, rating)}

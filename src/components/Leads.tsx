@@ -78,16 +78,11 @@ const Leads = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Badge className={`${getStatusColor(lead.status)} text-white`}>
-                    {lead.status}
-                  </Badge>
-                  <StarRating
-                    rating={lead.rating || 0}
-                    onRatingChange={(rating) => handleRatingChange(lead.id, rating)}
-                    size="sm"
-                  />
-                </div>
+                <StarRating
+                  rating={lead.rating || 0}
+                  onRatingChange={(rating) => handleRatingChange(lead.id, rating)}
+                  size="sm"
+                />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

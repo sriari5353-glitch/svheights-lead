@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight, Phone, MessageCircle } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight, Phone, MessageCircle, Star } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -741,6 +741,40 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
         </div>
 
         <div className="flex items-center gap-2">
+          {selectedIds.length > 0 && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="shrink-0">
+                  <Star className="h-4 w-4 mr-2" />
+                  Rate Selected ({selectedIds.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Rate Selected Leads</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Rate {selectedIds.length} selected lead(s):
+                  </p>
+                  <div className="flex justify-center">
+                    <StarRating
+                      rating={0}
+                      onRatingChange={(rating) => {
+                        selectedIds.forEach(leadId => {
+                          handleRatingChange(leadId, rating);
+                        });
+                        // Clear selection after rating
+                        setSelection({});
+                      }}
+                      size="lg"
+                    />
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="shrink-0"><UserPlus className="h-4 w-4" /> Add Lead</Button>

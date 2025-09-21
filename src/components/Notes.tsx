@@ -38,6 +38,7 @@ export default function Notes() {
   // Form states
   const [title, setTitle] = useState("");
   const [selectedContactId, setSelectedContactId] = useState<string>("none");
+  const [contactSearchTerm, setContactSearchTerm] = useState("");
 
   // Auto-save timeout
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -271,6 +272,12 @@ export default function Notes() {
     note.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Filter contacts based on search
+  const filteredContacts = leads.filter(lead =>
+    lead.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+    lead.phone.toLowerCase().includes(contactSearchTerm.toLowerCase())
+  );
+
   if (!user) {
     return (
       <Card className="w-full max-w-4xl mx-auto">
@@ -495,19 +502,35 @@ export default function Notes() {
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">Link to Contact (Optional)</label>
-              <Select value={selectedContactId} onValueChange={setSelectedContactId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select contact..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No contact</SelectItem>
-                  {leads.map((lead) => (
-                    <SelectItem key={lead.id} value={lead.id}>
-                      {lead.name} - {lead.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search contacts by name or phone..."
+                    value={contactSearchTerm}
+                    onChange={(e) => setContactSearchTerm(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+                <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select contact..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No contact</SelectItem>
+                    {filteredContacts.map((lead) => (
+                      <SelectItem key={lead.id} value={lead.id}>
+                        {lead.name} - {lead.phone}
+                      </SelectItem>
+                    ))}
+                    {filteredContacts.length === 0 && contactSearchTerm && (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        No contacts found matching "{contactSearchTerm}"
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -516,6 +539,7 @@ export default function Notes() {
               onClick={() => {
                 setNewNoteDialog(false);
                 setTitle("");
+                setContactSearchTerm("");
               }}
             >
               Cancel

@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { BookOpen, Calendar as CalendarIcon, List, Users } from "lucide-react";
+import { BookOpen, Calendar as CalendarIcon, List, Users, Search } from "lucide-react";
 import { format } from "date-fns";
 import QuickNoteCreate from "./QuickNoteCreate";
 
@@ -36,6 +37,13 @@ export default function Diary() {
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [contacts, setContacts] = useState<Lead[]>([]);
   const [selectedContactId, setSelectedContactId] = useState<string>("");
+  const [contactSearchTerm, setContactSearchTerm] = useState("");
+
+  // Filter contacts based on search term
+  const filteredContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+    contact.phone.toLowerCase().includes(contactSearchTerm.toLowerCase())
+  );
 
   // Load all diary entries when user changes
   useEffect(() => {
@@ -274,43 +282,59 @@ export default function Diary() {
                       className="resize-none"
                     />
                     <div className="flex items-center gap-2">
-                      <Select 
-                        value="" 
-                        onValueChange={(contactId) => {
-                          const contact = contacts.find(c => c.id === contactId);
-                          if (contact) {
-                            const contactText = `${contact.name} (${contact.phone})`;
-                            const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-                            if (textarea) {
-                              const cursorPos = textarea.selectionStart;
-                              const textBefore = content.substring(0, cursorPos);
-                              const textAfter = content.substring(cursorPos);
-                              const newContent = textBefore + contactText + textAfter;
-                              setContent(newContent);
-                              
-                              // Set cursor position after the inserted contact
-                              setTimeout(() => {
-                                textarea.selectionStart = textarea.selectionEnd = cursorPos + contactText.length;
-                                textarea.focus();
-                              }, 0);
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Search className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search contacts by name or phone..."
+                            value={contactSearchTerm}
+                            onChange={(e) => setContactSearchTerm(e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                        <Select 
+                          value="" 
+                          onValueChange={(contactId) => {
+                            const contact = filteredContacts.find(c => c.id === contactId);
+                            if (contact) {
+                              const contactText = `${contact.name} (${contact.phone})`;
+                              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const cursorPos = textarea.selectionStart;
+                                const textBefore = content.substring(0, cursorPos);
+                                const textAfter = content.substring(cursorPos);
+                                const newContent = textBefore + contactText + textAfter;
+                                setContent(newContent);
+                                
+                                // Set cursor position after the inserted contact
+                                setTimeout(() => {
+                                  textarea.selectionStart = textarea.selectionEnd = cursorPos + contactText.length;
+                                  textarea.focus();
+                                }, 0);
+                              }
                             }
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-48">
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            <SelectValue placeholder="Insert contact" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {contacts.map((contact) => (
-                            <SelectItem key={contact.id} value={contact.id}>
-                              {contact.name} ({contact.phone})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          }}
+                        >
+                          <SelectTrigger className="w-48">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              <SelectValue placeholder="Insert contact" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredContacts.map((contact) => (
+                              <SelectItem key={contact.id} value={contact.id}>
+                                {contact.name} ({contact.phone})
+                              </SelectItem>
+                            ))}
+                            {filteredContacts.length === 0 && contactSearchTerm && (
+                              <div className="p-2 text-sm text-muted-foreground text-center">
+                                No contacts found matching "{contactSearchTerm}"
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -338,25 +362,41 @@ export default function Diary() {
                       {content.length} characters
                     </span>
                     <div className="flex items-center gap-3">
-                      <Select 
-                        value={selectedContactId || "none"} 
-                        onValueChange={(value) => setSelectedContactId(value === "none" ? "" : value)}
-                      >
-                        <SelectTrigger className="w-48">
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            <SelectValue placeholder="Link to contact" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No contact</SelectItem>
-                          {contacts.map((contact) => (
-                            <SelectItem key={contact.id} value={contact.id}>
-                              {contact.name} ({contact.phone})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Search className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search contacts by name or phone..."
+                            value={contactSearchTerm}
+                            onChange={(e) => setContactSearchTerm(e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                        <Select 
+                          value={selectedContactId || "none"} 
+                          onValueChange={(value) => setSelectedContactId(value === "none" ? "" : value)}
+                        >
+                          <SelectTrigger className="w-48">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4" />
+                              <SelectValue placeholder="Link to contact" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No contact</SelectItem>
+                            {filteredContacts.map((contact) => (
+                              <SelectItem key={contact.id} value={contact.id}>
+                                {contact.name} ({contact.phone})
+                              </SelectItem>
+                            ))}
+                            {filteredContacts.length === 0 && contactSearchTerm && (
+                              <div className="p-2 text-sm text-muted-foreground text-center">
+                                No contacts found matching "{contactSearchTerm}"
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <Button 
                         onClick={saveDiary} 
                         disabled={loading || saving}

@@ -282,59 +282,57 @@ export default function Diary() {
                       className="resize-none"
                     />
                     <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Search className="h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Search contacts by name or phone..."
-                            value={contactSearchTerm}
-                            onChange={(e) => setContactSearchTerm(e.target.value)}
-                            className="flex-1"
-                          />
-                        </div>
-                        <Select 
-                          value="" 
-                          onValueChange={(contactId) => {
-                            const contact = filteredContacts.find(c => c.id === contactId);
-                            if (contact) {
-                              const contactText = `${contact.name} (${contact.phone})`;
-                              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-                              if (textarea) {
-                                const cursorPos = textarea.selectionStart;
-                                const textBefore = content.substring(0, cursorPos);
-                                const textAfter = content.substring(cursorPos);
-                                const newContent = textBefore + contactText + textAfter;
-                                setContent(newContent);
-                                
-                                // Set cursor position after the inserted contact
-                                setTimeout(() => {
-                                  textarea.selectionStart = textarea.selectionEnd = cursorPos + contactText.length;
-                                  textarea.focus();
-                                }, 0);
-                              }
+                      <Select 
+                        value="" 
+                        onValueChange={(contactId) => {
+                          const contact = filteredContacts.find(c => c.id === contactId);
+                          if (contact) {
+                            const contactText = `${contact.name} (${contact.phone})`;
+                            const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                            if (textarea) {
+                              const cursorPos = textarea.selectionStart;
+                              const textBefore = content.substring(0, cursorPos);
+                              const textAfter = content.substring(cursorPos);
+                              const newContent = textBefore + contactText + textAfter;
+                              setContent(newContent);
+                              
+                              // Set cursor position after the inserted contact
+                              setTimeout(() => {
+                                textarea.selectionStart = textarea.selectionEnd = cursorPos + contactText.length;
+                                textarea.focus();
+                              }, 0);
                             }
-                          }}
-                        >
-                          <SelectTrigger className="w-48">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              <SelectValue placeholder="Insert contact" />
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-48">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <SelectValue placeholder="Insert contact" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <div className="flex items-center gap-2 p-2 border-b">
+                            <Search className="h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Search contacts by name or phone..."
+                              value={contactSearchTerm}
+                              onChange={(e) => setContactSearchTerm(e.target.value)}
+                              className="flex-1"
+                            />
+                          </div>
+                          {filteredContacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id}>
+                              {contact.name} ({contact.phone})
+                            </SelectItem>
+                          ))}
+                          {filteredContacts.length === 0 && contactSearchTerm && (
+                            <div className="p-2 text-sm text-muted-foreground text-center">
+                              No contacts found matching "{contactSearchTerm}"
                             </div>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {filteredContacts.map((contact) => (
-                              <SelectItem key={contact.id} value={contact.id}>
-                                {contact.name} ({contact.phone})
-                              </SelectItem>
-                            ))}
-                            {filteredContacts.length === 0 && contactSearchTerm && (
-                              <div className="p-2 text-sm text-muted-foreground text-center">
-                                No contacts found matching "{contactSearchTerm}"
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          )}
+                        </SelectContent>
+                      </Select>
                       <Button
                         variant="outline"
                         size="sm"

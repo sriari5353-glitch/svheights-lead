@@ -502,7 +502,16 @@ export default function Notes() {
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">Link to Contact (Optional)</label>
-               <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+              <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search contacts by name or phone..."
+                  value={contactSearchTerm}
+                  onChange={(e) => setContactSearchTerm(e.target.value)}
+                  className="flex-1 border-0 bg-transparent"
+                />
+              </div>
+              <Select value={selectedContactId} onValueChange={setSelectedContactId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select contact..." />
                 </SelectTrigger>

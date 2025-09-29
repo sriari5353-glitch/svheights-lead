@@ -502,35 +502,33 @@ export default function Notes() {
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">Link to Contact (Optional)</label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search contacts by name or phone..."
-                    value={contactSearchTerm}
-                    onChange={(e) => setContactSearchTerm(e.target.value)}
-                    className="flex-1"
-                  />
-                </div>
-                <Select value={selectedContactId} onValueChange={setSelectedContactId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select contact..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No contact</SelectItem>
-                    {filteredContacts.map((lead) => (
-                      <SelectItem key={lead.id} value={lead.id}>
-                        {lead.name} - {lead.phone}
-                      </SelectItem>
-                    ))}
-                    {filteredContacts.length === 0 && contactSearchTerm && (
-                      <div className="p-2 text-sm text-muted-foreground text-center">
-                        No contacts found matching "{contactSearchTerm}"
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select contact..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="flex items-center gap-2 p-2 border-b">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search contacts by name or phone..."
+                      value={contactSearchTerm}
+                      onChange={(e) => setContactSearchTerm(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                  <SelectItem value="none">No contact</SelectItem>
+                  {filteredContacts.map((lead) => (
+                    <SelectItem key={lead.id} value={lead.id}>
+                      {lead.name} - {lead.phone}
+                    </SelectItem>
+                  ))}
+                  {filteredContacts.length === 0 && contactSearchTerm && (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      No contacts found matching "{contactSearchTerm}"
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

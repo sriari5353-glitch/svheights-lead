@@ -502,21 +502,13 @@ export default function Notes() {
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">Link to Contact (Optional)</label>
-              <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search contacts by name or phone..."
-                  value={contactSearchTerm}
-                  onChange={(e) => setContactSearchTerm(e.target.value)}
-                  className="flex-1 border-0 bg-transparent"
-                />
-              </div>
               <Select value={selectedContactId} onValueChange={setSelectedContactId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select contact..." />
                 </SelectTrigger>
                 <SelectContent className="z-50 bg-background">
-                  <div className="sticky top-0 flex items-center gap-2 p-2 border-b bg-background">
+                  <SelectItem value="none">No contact</SelectItem>
+                  <div className="sticky top-0 z-10 flex items-center gap-2 p-2 border-b bg-background/95 backdrop-blur-sm">
                     <Search className="h-4 w-4 text-muted-foreground shrink-0" />
                     <Input
                       placeholder="Search contacts by name or phone..."
@@ -526,10 +518,9 @@ export default function Notes() {
                         setContactSearchTerm(e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-1 h-8"
+                      className="flex-1 h-8 border-0 bg-transparent"
                     />
                   </div>
-                  <SelectItem value="none">No contact</SelectItem>
                   {filteredContacts.map((lead) => (
                     <SelectItem key={lead.id} value={lead.id}>
                       {lead.name} - {lead.phone}

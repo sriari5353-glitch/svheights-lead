@@ -315,14 +315,13 @@ function CreateReminderDialog({
   const { addReminder } = useCRM();
   const [open, setOpen] = useState(false);
   const [reminderText, setReminderText] = useState("");
-  const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
-  const [reminderTime, setReminderTime] = useState({ hours: "09", minutes: "00" });
+  const [reminderDateTime, setReminderDateTime] = useState<Date | undefined>(undefined);
 
   const handleCreateReminder = async () => {
-    if (!reminderDate) {
+    if (!reminderDateTime) {
       toast({ 
-        title: "Select date first", 
-        description: "Please pick a date for the reminder", 
+        title: "Select date and time first", 
+        description: "Please pick a date and time for the reminder", 
         variant: "destructive" 
       });
       return;
@@ -330,14 +329,10 @@ function CreateReminderDialog({
 
     const message = reminderText.trim() || `Follow up with ${leadName}`;
     
-    // Combine date with time
-    const dateWithTime = new Date(reminderDate);
-    dateWithTime.setHours(parseInt(reminderTime.hours), parseInt(reminderTime.minutes), 0, 0);
-    
     try {
       await addReminder({
         leadId,
-        datetime: dateWithTime.toISOString(),
+        datetime: reminderDateTime.toISOString(),
         message
       });
       toast({ 
@@ -346,8 +341,7 @@ function CreateReminderDialog({
       });
       setOpen(false);
       setReminderText("");
-      setReminderDate(undefined);
-      setReminderTime({ hours: "09", minutes: "00" });
+      setReminderDateTime(undefined);
     } catch (error) {
       toast({ 
         title: "Error", 
@@ -370,59 +364,66 @@ function CreateReminderDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid gap-2">
-            <Label>Select Date</Label>
+            <Label>Select Date & Time</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start">
                   <CalendarIcon className="h-4 w-4 mr-2" />
-                  {reminderDate ? format(reminderDate, "PPP") : "Pick a date"}
+                  {reminderDateTime ? format(reminderDateTime, "PPP 'at' p") : "Pick date and time"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={reminderDate}
-                  onSelect={setReminderDate}
+                  selected={reminderDateTime}
+                  onSelect={(date) => {
+                    if (date) {
+                      const newDate = reminderDateTime ? new Date(reminderDateTime) : new Date();
+                      newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                      setReminderDateTime(newDate);
+                    }
+                  }}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
+                <div className="border-t p-3">
+                  <Label className="text-xs mb-2 block">Time</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={reminderDateTime ? reminderDateTime.getHours().toString().padStart(2, '0') : '09'}
+                      onChange={(e) => {
+                        const hours = parseInt(e.target.value);
+                        if (hours >= 0 && hours <= 23) {
+                          const newDate = reminderDateTime || new Date();
+                          newDate.setHours(hours);
+                          setReminderDateTime(new Date(newDate));
+                        }
+                      }}
+                      className="w-16 text-center"
+                    />
+                    <span>:</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={reminderDateTime ? reminderDateTime.getMinutes().toString().padStart(2, '0') : '00'}
+                      onChange={(e) => {
+                        const minutes = parseInt(e.target.value);
+                        if (minutes >= 0 && minutes <= 59) {
+                          const newDate = reminderDateTime || new Date();
+                          newDate.setMinutes(minutes);
+                          setReminderDateTime(new Date(newDate));
+                        }
+                      }}
+                      className="w-16 text-center"
+                    />
+                  </div>
+                </div>
               </PopoverContent>
             </Popover>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label>Select Time</Label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                min="0"
-                max="23"
-                value={reminderTime.hours}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 23)) {
-                    setReminderTime({ ...reminderTime, hours: val.padStart(2, "0") });
-                  }
-                }}
-                placeholder="HH"
-                className="flex-1"
-              />
-              <span className="flex items-center">:</span>
-              <Input
-                type="number"
-                min="0"
-                max="59"
-                value={reminderTime.minutes}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 59)) {
-                    setReminderTime({ ...reminderTime, minutes: val.padStart(2, "0") });
-                  }
-                }}
-                placeholder="MM"
-                className="flex-1"
-              />
-            </div>
           </div>
           
           <div className="grid gap-2">

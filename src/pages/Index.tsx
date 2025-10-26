@@ -316,6 +316,7 @@ function CreateReminderDialog({
   const [open, setOpen] = useState(false);
   const [reminderText, setReminderText] = useState("");
   const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
+  const [reminderTime, setReminderTime] = useState({ hours: "09", minutes: "00" });
 
   const handleCreateReminder = async () => {
     if (!reminderDate) {
@@ -329,10 +330,14 @@ function CreateReminderDialog({
 
     const message = reminderText.trim() || `Follow up with ${leadName}`;
     
+    // Combine date with time
+    const dateWithTime = new Date(reminderDate);
+    dateWithTime.setHours(parseInt(reminderTime.hours), parseInt(reminderTime.minutes), 0, 0);
+    
     try {
       await addReminder({
         leadId,
-        datetime: reminderDate.toISOString(),
+        datetime: dateWithTime.toISOString(),
         message
       });
       toast({ 
@@ -342,6 +347,7 @@ function CreateReminderDialog({
       setOpen(false);
       setReminderText("");
       setReminderDate(undefined);
+      setReminderTime({ hours: "09", minutes: "00" });
     } catch (error) {
       toast({ 
         title: "Error", 
@@ -382,6 +388,41 @@ function CreateReminderDialog({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+          
+          <div className="grid gap-2">
+            <Label>Select Time</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min="0"
+                max="23"
+                value={reminderTime.hours}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 23)) {
+                    setReminderTime({ ...reminderTime, hours: val.padStart(2, "0") });
+                  }
+                }}
+                placeholder="HH"
+                className="flex-1"
+              />
+              <span className="flex items-center">:</span>
+              <Input
+                type="number"
+                min="0"
+                max="59"
+                value={reminderTime.minutes}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 59)) {
+                    setReminderTime({ ...reminderTime, minutes: val.padStart(2, "0") });
+                  }
+                }}
+                placeholder="MM"
+                className="flex-1"
+              />
+            </div>
           </div>
           
           <div className="grid gap-2">

@@ -388,38 +388,98 @@ function CreateReminderDialog({
                 />
                 <div className="border-t p-3">
                   <Label className="text-xs mb-2 block">Time</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="23"
-                      value={reminderDateTime ? reminderDateTime.getHours().toString().padStart(2, '0') : '09'}
-                      onChange={(e) => {
-                        const hours = parseInt(e.target.value);
-                        if (hours >= 0 && hours <= 23) {
+                  <div className="flex gap-3 items-center justify-center">
+                    <div className="flex flex-col items-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-10 p-0"
+                        onClick={() => {
                           const newDate = reminderDateTime || new Date();
-                          newDate.setHours(hours);
+                          const currentHours = newDate.getHours();
+                          newDate.setHours((currentHours + 1) % 24);
                           setReminderDateTime(new Date(newDate));
-                        }
-                      }}
-                      className="w-16 text-center"
-                    />
-                    <span>:</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="59"
-                      value={reminderDateTime ? reminderDateTime.getMinutes().toString().padStart(2, '0') : '00'}
-                      onChange={(e) => {
-                        const minutes = parseInt(e.target.value);
-                        if (minutes >= 0 && minutes <= 59) {
+                        }}
+                      >
+                        ▲
+                      </Button>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="23"
+                        value={reminderDateTime ? reminderDateTime.getHours().toString().padStart(2, '0') : '09'}
+                        onChange={(e) => {
+                          const hours = parseInt(e.target.value);
+                          if (hours >= 0 && hours <= 23) {
+                            const newDate = reminderDateTime || new Date();
+                            newDate.setHours(hours);
+                            setReminderDateTime(new Date(newDate));
+                          }
+                        }}
+                        className="w-14 text-center h-12 text-lg font-semibold"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-10 p-0"
+                        onClick={() => {
                           const newDate = reminderDateTime || new Date();
-                          newDate.setMinutes(minutes);
+                          const currentHours = newDate.getHours();
+                          newDate.setHours(currentHours === 0 ? 23 : currentHours - 1);
                           setReminderDateTime(new Date(newDate));
-                        }
-                      }}
-                      className="w-16 text-center"
-                    />
+                        }}
+                      >
+                        ▼
+                      </Button>
+                    </div>
+                    <span className="text-2xl font-bold">:</span>
+                    <div className="flex flex-col items-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-10 p-0"
+                        onClick={() => {
+                          const newDate = reminderDateTime || new Date();
+                          const currentMinutes = newDate.getMinutes();
+                          newDate.setMinutes((currentMinutes + 1) % 60);
+                          setReminderDateTime(new Date(newDate));
+                        }}
+                      >
+                        ▲
+                      </Button>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="59"
+                        value={reminderDateTime ? reminderDateTime.getMinutes().toString().padStart(2, '0') : '00'}
+                        onChange={(e) => {
+                          const minutes = parseInt(e.target.value);
+                          if (minutes >= 0 && minutes <= 59) {
+                            const newDate = reminderDateTime || new Date();
+                            newDate.setMinutes(minutes);
+                            setReminderDateTime(new Date(newDate));
+                          }
+                        }}
+                        className="w-14 text-center h-12 text-lg font-semibold"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-10 p-0"
+                        onClick={() => {
+                          const newDate = reminderDateTime || new Date();
+                          const currentMinutes = newDate.getMinutes();
+                          newDate.setMinutes(currentMinutes === 0 ? 59 : currentMinutes - 1);
+                          setReminderDateTime(new Date(newDate));
+                        }}
+                      >
+                        ▼
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </PopoverContent>

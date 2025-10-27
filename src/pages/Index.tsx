@@ -387,104 +387,124 @@ function CreateReminderDialog({
                   className="p-3 pointer-events-auto"
                 />
                 <div className="border-t p-4 bg-muted/30">
-                  <Label className="text-sm font-semibold mb-3 block">Select Time</Label>
-                  <div className="flex gap-2 items-center justify-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
-                        onClick={() => {
-                          const newDate = reminderDateTime || new Date();
-                          const currentHours = newDate.getHours();
-                          newDate.setHours((currentHours + 1) % 24);
-                          setReminderDateTime(new Date(newDate));
-                        }}
-                      >
-                        ▲
-                      </Button>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="23"
-                        value={reminderDateTime ? reminderDateTime.getHours().toString().padStart(2, '0') : '09'}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === '') return;
-                          const hours = parseInt(value);
-                          if (!isNaN(hours) && hours >= 0 && hours <= 23) {
-                            const newDate = reminderDateTime || new Date();
-                            newDate.setHours(hours);
-                            setReminderDateTime(new Date(newDate));
-                          }
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        className="w-16 text-center h-14 text-xl font-bold border-2"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
-                        onClick={() => {
-                          const newDate = reminderDateTime || new Date();
-                          const currentHours = newDate.getHours();
-                          newDate.setHours(currentHours === 0 ? 23 : currentHours - 1);
-                          setReminderDateTime(new Date(newDate));
-                        }}
-                      >
-                        ▼
-                      </Button>
+                  {reminderDateTime && (
+                    <div className="text-center mb-3 p-2 bg-primary/10 rounded-lg">
+                      <p className="text-sm font-semibold text-primary">
+                        {format(reminderDateTime, "EEEE, MMMM d, yyyy")}
+                      </p>
                     </div>
-                    <span className="text-3xl font-bold text-muted-foreground">:</span>
-                    <div className="flex flex-col items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
-                        onClick={() => {
-                          const newDate = reminderDateTime || new Date();
-                          const currentMinutes = newDate.getMinutes();
-                          newDate.setMinutes((currentMinutes + 1) % 60);
-                          setReminderDateTime(new Date(newDate));
-                        }}
-                      >
-                        ▲
-                      </Button>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="59"
-                        value={reminderDateTime ? reminderDateTime.getMinutes().toString().padStart(2, '0') : '00'}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === '') return;
-                          const minutes = parseInt(value);
-                          if (!isNaN(minutes) && minutes >= 0 && minutes <= 59) {
+                  )}
+                  <Label className="text-sm font-semibold mb-3 block text-center">Set Time</Label>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="relative w-48 h-48 rounded-full border-4 border-primary/20 bg-background flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-5xl font-bold text-primary">
+                          {reminderDateTime ? reminderDateTime.getHours().toString().padStart(2, '0') : '09'}
+                          <span className="text-muted-foreground">:</span>
+                          {reminderDateTime ? reminderDateTime.getMinutes().toString().padStart(2, '0') : '00'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 items-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
+                          onClick={() => {
                             const newDate = reminderDateTime || new Date();
-                            newDate.setMinutes(minutes);
+                            const currentHours = newDate.getHours();
+                            newDate.setHours((currentHours + 1) % 24);
                             setReminderDateTime(new Date(newDate));
-                          }
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        className="w-16 text-center h-14 text-xl font-bold border-2"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
-                        onClick={() => {
-                          const newDate = reminderDateTime || new Date();
-                          const currentMinutes = newDate.getMinutes();
-                          newDate.setMinutes(currentMinutes === 0 ? 59 : currentMinutes - 1);
-                          setReminderDateTime(new Date(newDate));
-                        }}
-                      >
-                        ▼
-                      </Button>
+                          }}
+                        >
+                          ▲
+                        </Button>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="23"
+                          value={reminderDateTime ? reminderDateTime.getHours().toString().padStart(2, '0') : '09'}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') return;
+                            const hours = parseInt(value);
+                            if (!isNaN(hours) && hours >= 0 && hours <= 23) {
+                              const newDate = reminderDateTime || new Date();
+                              newDate.setHours(hours);
+                              setReminderDateTime(new Date(newDate));
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="w-16 text-center h-12 text-lg font-bold border-2"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
+                          onClick={() => {
+                            const newDate = reminderDateTime || new Date();
+                            const currentHours = newDate.getHours();
+                            newDate.setHours(currentHours === 0 ? 23 : currentHours - 1);
+                            setReminderDateTime(new Date(newDate));
+                          }}
+                        >
+                          ▼
+                        </Button>
+                        <span className="text-xs text-muted-foreground">Hours</span>
+                      </div>
+                      <span className="text-3xl font-bold text-muted-foreground self-center mb-4">:</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
+                          onClick={() => {
+                            const newDate = reminderDateTime || new Date();
+                            const currentMinutes = newDate.getMinutes();
+                            newDate.setMinutes((currentMinutes + 1) % 60);
+                            setReminderDateTime(new Date(newDate));
+                          }}
+                        >
+                          ▲
+                        </Button>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="59"
+                          value={reminderDateTime ? reminderDateTime.getMinutes().toString().padStart(2, '0') : '00'}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') return;
+                            const minutes = parseInt(value);
+                            if (!isNaN(minutes) && minutes >= 0 && minutes <= 59) {
+                              const newDate = reminderDateTime || new Date();
+                              newDate.setMinutes(minutes);
+                              setReminderDateTime(new Date(newDate));
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="w-16 text-center h-12 text-lg font-bold border-2"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-12 p-0 hover:bg-primary hover:text-primary-foreground"
+                          onClick={() => {
+                            const newDate = reminderDateTime || new Date();
+                            const currentMinutes = newDate.getMinutes();
+                            newDate.setMinutes(currentMinutes === 0 ? 59 : currentMinutes - 1);
+                            setReminderDateTime(new Date(newDate));
+                          }}
+                        >
+                          ▼
+                        </Button>
+                        <span className="text-xs text-muted-foreground">Minutes</span>
+                      </div>
                     </div>
                   </div>
                 </div>

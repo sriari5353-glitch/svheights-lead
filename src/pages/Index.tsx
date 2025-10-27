@@ -364,7 +364,7 @@ function CreateReminderDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid gap-2">
-            <Label>Select Date & Time</Label>
+            <Label>Select Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start">

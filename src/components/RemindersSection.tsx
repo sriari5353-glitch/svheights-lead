@@ -9,14 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CalendarDays, Clock, CheckCircle, AlertCircle, Loader2, MoreVertical, Calendar, Check, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarDays, Clock, CheckCircle, AlertCircle, Loader2, MoreVertical, Calendar as CalendarIcon, Check, Trash2 } from "lucide-react";
 import { format, formatDistanceToNow, isAfter, isBefore, addHours } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
 
 export default function RemindersSection() {
   const { reminders, leads, addReminder, deleteReminder, updateReminder } = useCRM();
   const [leadId, setLeadId] = useState<string>("");
-  const [when, setWhen] = useState<string>("");
+  const [when, setWhen] = useState<Date | undefined>(undefined);
   const [message, setMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -61,7 +63,7 @@ export default function RemindersSection() {
       if (result.ok) {
         setSaveStatus("saved");
         setLeadId("");
-        setWhen("");
+        setWhen(undefined);
         setMessage("");
         setTimeout(() => setSaveStatus("idle"), 3000);
       } else {
@@ -223,7 +225,7 @@ export default function RemindersSection() {
               size="sm" 
               onClick={() => openRescheduleDialog(reminder)}
             >
-              <Calendar className="h-4 w-4 mr-1" />
+              <CalendarIcon className="h-4 w-4 mr-1" />
               Reschedule
             </Button>
             <Button variant="outline" size="sm" onClick={() => deleteReminder(reminder.id)}>
@@ -276,12 +278,58 @@ export default function RemindersSection() {
               </div>
               <div className="grid gap-2">
                 <Label>Date & time</Label>
-                <Input 
-                  type="datetime-local" 
-                  value={when} 
-                  onChange={(e) => setWhen(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                />
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-start flex-1">
+                        <CalendarDays className="h-4 w-4 mr-2" />
+                        {when ? format(when, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={when}
+                        onSelect={(date) => {
+                          if (date) {
+                            const newDate = new Date(date);
+                            if (when) {
+                              newDate.setHours(when.getHours(), when.getMinutes(), 0, 0);
+                            } else {
+                              newDate.setHours(9, 0, 0, 0);
+                            }
+                            setWhen(newDate);
+                          }
+                        }}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="px-3">
+                        <Clock className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-4" align="start">
+                      <div className="space-y-2">
+                        <Label>Select Time (Optional)</Label>
+                        <Input 
+                          type="time" 
+                          value={when ? format(when, "HH:mm") : "09:00"}
+                          onChange={(e) => {
+                            const [hours, minutes] = e.target.value.split(':').map(Number);
+                            const newDate = when ? new Date(when) : new Date();
+                            newDate.setHours(hours, minutes, 0, 0);
+                            setWhen(newDate);
+                          }}
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
             <div className="grid gap-2">

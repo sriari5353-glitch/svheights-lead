@@ -369,7 +369,7 @@ function CreateReminderDialog({
               <PopoverTrigger asChild>
                 <Button variant="outline" className="justify-start">
                   <CalendarIcon className="h-4 w-4 mr-2" />
-                  {reminderDateTime ? format(reminderDateTime, "PPP 'at' p") : "Pick date and time"}
+                  {reminderDateTime ? format(reminderDateTime, "PPP") : "Pick a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -378,8 +378,9 @@ function CreateReminderDialog({
                   selected={reminderDateTime}
                   onSelect={(date) => {
                     if (date) {
-                      const newDate = reminderDateTime ? new Date(reminderDateTime) : new Date();
-                      newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                      // Set time to 9:00 AM by default
+                      const newDate = new Date(date);
+                      newDate.setHours(9, 0, 0, 0);
                       setReminderDateTime(newDate);
                     }
                   }}

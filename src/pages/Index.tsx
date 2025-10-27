@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight, Phone, MessageCircle, Star } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight, Phone, MessageCircle, Star, Clock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -365,30 +365,59 @@ function CreateReminderDialog({
         <div className="space-y-4">
           <div className="grid gap-2">
             <Label>Select Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {reminderDateTime ? format(reminderDateTime, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={reminderDateTime}
-                  onSelect={(date) => {
-                    if (date) {
-                      // Set time to 9:00 AM by default
-                      const newDate = new Date(date);
-                      newDate.setHours(9, 0, 0, 0);
-                      setReminderDateTime(newDate);
-                    }
-                  }}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start flex-1">
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {reminderDateTime ? format(reminderDateTime, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={reminderDateTime}
+                    onSelect={(date) => {
+                      if (date) {
+                        // Keep existing time if already set, otherwise default to 9:00 AM
+                        const newDate = new Date(date);
+                        if (reminderDateTime) {
+                          newDate.setHours(reminderDateTime.getHours(), reminderDateTime.getMinutes(), 0, 0);
+                        } else {
+                          newDate.setHours(9, 0, 0, 0);
+                        }
+                        setReminderDateTime(newDate);
+                      }
+                    }}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="px-3">
+                    <Clock className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-4" align="start">
+                  <div className="space-y-2">
+                    <Label>Select Time (Optional)</Label>
+                    <Input 
+                      type="time" 
+                      value={reminderDateTime ? format(reminderDateTime, "HH:mm") : "09:00"}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(':').map(Number);
+                        const newDate = reminderDateTime ? new Date(reminderDateTime) : new Date();
+                        newDate.setHours(hours, minutes, 0, 0);
+                        setReminderDateTime(newDate);
+                      }}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           
           <div className="grid gap-2">

@@ -11,7 +11,6 @@ import ResetPassword from "./pages/ResetPassword";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Admin from "./pages/Admin";
 import AppHeader from "./components/AppHeader";
-import TempAdminReset from "./pages/TempAdminReset";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +32,6 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/forgot" element={<ForgotPassword />} />
             <Route path="/auth/reset" element={<ResetPassword />} />
-            <Route path="/temp-admin-reset" element={<TempAdminReset />} />
             <Route path="/admin" element={<ProtectedRoute element={<Admin />} />} />
             <Route path="/" element={<ProtectedRoute element={<Index />} />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

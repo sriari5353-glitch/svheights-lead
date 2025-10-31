@@ -44,7 +44,7 @@ interface UserProfile {
 }
 
 const AuthPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,10 +53,18 @@ const AuthPage: React.FC = () => {
 
   useEffect(() => {
     setSEO("Sign In | LeadMate CRM", "Sign in with your username and password to access LeadMate CRM.");
-    fetchUsers();
-  }, []);
+    // Only fetch all users if current user is admin
+    if (isAdmin) {
+      fetchUsers();
+    }
+  }, [isAdmin]);
 
   const fetchUsers = async () => {
+    // Double-check admin status before fetching
+    if (!isAdmin) {
+      return;
+    }
+    
     setLoadingUsers(true);
     try {
       const { data, error } = await supabase
@@ -181,35 +189,37 @@ const AuthPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="grid gap-3">
-            {/* User Selection Dropdown */}
-            <div className="grid gap-2">
-              <Label>Quick User Selection</Label>
-              <Select onValueChange={handleUserSelect} disabled={loadingUsers}>
-                <SelectTrigger className="bg-background border border-input">
-                  <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select a user to auto-fill"} />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-input z-50 shadow-lg">
-                  {users.map((user) => (
-                    <SelectItem 
-                      key={user.id} 
-                      value={user.id}
-                      className="bg-background hover:bg-muted cursor-pointer"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {user.username || user.email}
-                        </span>
-                        {user.full_name && (
-                          <span className="text-sm text-muted-foreground">
-                            {user.full_name}
+            {/* User Selection Dropdown - Only show for admins */}
+            {isAdmin && users.length > 0 && (
+              <div className="grid gap-2">
+                <Label>Quick User Selection</Label>
+                <Select onValueChange={handleUserSelect} disabled={loadingUsers}>
+                  <SelectTrigger className="bg-background border border-input">
+                    <SelectValue placeholder={loadingUsers ? "Loading users..." : "Select a user to auto-fill"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-input z-50 shadow-lg">
+                    {users.map((user) => (
+                      <SelectItem 
+                        key={user.id} 
+                        value={user.id}
+                        className="bg-background hover:bg-muted cursor-pointer"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {user.username || user.email}
                           </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                          {user.full_name && (
+                            <span className="text-sm text-muted-foreground">
+                              {user.full_name}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Manual Username Input */}
             <div className="grid gap-2">

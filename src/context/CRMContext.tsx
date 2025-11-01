@@ -188,6 +188,12 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Leads real-time updates
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "leads" }, (payload) => {
         console.log("Real-time: Lead inserted", payload);
+        // Check if lead already exists (from optimistic update)
+        const existingLead = state.leads.find(l => l.id === payload.new.id);
+        if (existingLead) {
+          console.log("Lead already exists in state, skipping duplicate add");
+          return;
+        }
         const newLead: Lead = {
           id: payload.new.id,
           name: payload.new.name,

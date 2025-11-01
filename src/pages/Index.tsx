@@ -407,8 +407,8 @@ function CreateReminderDialog({
                     <Clock className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-4" align="start">
-                  <div className="space-y-2">
+                <PopoverContent className="w-auto p-4 bg-background border z-50" align="start">
+                  <div className="space-y-3">
                     <Label>Select Time (Optional)</Label>
                     <Input 
                       type="time" 
@@ -419,7 +419,16 @@ function CreateReminderDialog({
                         newDate.setHours(hours, minutes, 0, 0);
                         setReminderDateTime(newDate);
                       }}
+                      className="bg-background"
                     />
+                    <Button 
+                      className="w-full" 
+                      onClick={() => {
+                        toast({ title: "Time saved", description: "Reminder time has been set" });
+                      }}
+                    >
+                      Save Time
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>

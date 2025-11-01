@@ -322,6 +322,7 @@ function CreateReminderDialog({
   const [open, setOpen] = useState(false);
   const [reminderText, setReminderText] = useState("");
   const [reminderDateTime, setReminderDateTime] = useState<Date | undefined>(undefined);
+  const [timeChanged, setTimeChanged] = useState(false);
 
   const handleCreateReminder = async () => {
     if (!reminderDateTime) {
@@ -418,17 +419,21 @@ function CreateReminderDialog({
                         const newDate = reminderDateTime ? new Date(reminderDateTime) : new Date();
                         newDate.setHours(hours, minutes, 0, 0);
                         setReminderDateTime(newDate);
+                        setTimeChanged(true);
                       }}
                       className="bg-background"
                     />
-                    <Button 
-                      className="w-full" 
-                      onClick={() => {
-                        toast({ title: "Time saved", description: "Reminder time has been set" });
-                      }}
-                    >
-                      Save Time
-                    </Button>
+                    {timeChanged && (
+                      <Button 
+                        className="w-full" 
+                        onClick={() => {
+                          setTimeChanged(false);
+                          toast({ title: "Time saved", description: "Reminder time has been set" });
+                        }}
+                      >
+                        Save Time
+                      </Button>
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>

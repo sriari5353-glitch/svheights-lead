@@ -264,7 +264,13 @@ function CalendarNotesCard() {
     return () => clearTimeout(t);
   }, [text, key]);
 
-  const clear = () => setText("");
+  const save = () => {
+    setSaving(true);
+    setDiary((d) => ({ ...d, [key]: { text, updatedAt: new Date().toISOString() } }));
+    setSaving(false);
+    toast({ title: "Saved", description: "Your notes have been saved successfully" });
+  };
+  
   const lastSaved = diary[key]?.updatedAt ? format(new Date(diary[key]!.updatedAt!), "p") : undefined;
 
   return (
@@ -298,7 +304,7 @@ function CalendarNotesCard() {
         />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{text.length} chars</span>
-          <Button size="sm" variant="outline" onClick={clear}>Clear</Button>
+          <Button size="sm" onClick={save}>Save</Button>
         </div>
       </CardContent>
     </Card>

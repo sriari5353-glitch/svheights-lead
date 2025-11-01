@@ -15,7 +15,7 @@ import { format, formatDistanceToNow, isAfter, isBefore, addHours } from "date-f
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 
-export default function RemindersSection() {
+export default function RemindersSection({ onContactClick }: { onContactClick?: (leadId: string) => void }) {
   const { reminders, leads, addReminder, deleteReminder, updateReminder } = useCRM();
   const [leadId, setLeadId] = useState<string>("");
   const [when, setWhen] = useState<Date | undefined>(undefined);
@@ -199,7 +199,12 @@ export default function RemindersSection() {
           <div className="text-sm flex-1">
             <div className="font-medium flex items-center gap-2">
               <StatusIcon className="h-4 w-4" />
-              {lead?.name} • {lead?.phone}
+              <button 
+                onClick={() => onContactClick?.(reminder.leadId)}
+                className="hover:underline hover:text-primary cursor-pointer"
+              >
+                {lead?.name} • {lead?.phone}
+              </button>
               <Badge variant={status.variant}>{status.text}</Badge>
             </div>
             <div className="text-muted-foreground mt-1">

@@ -700,7 +700,7 @@ function NotesCalendarDialog({
   );
 }
 
-function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL" }) {
+function ContactsSection({ activeFeedback, selectedLeadId }: { activeFeedback?: Feedback | "ALL"; selectedLeadId?: string }) {
   const { leads, deleteLead, updateLead } = useCRM();
   const [selection, setSelection] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
@@ -728,6 +728,18 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
       setFb(activeFeedback === "ALL" ? undefined : (activeFeedback as Feedback));
     }
   }, [activeFeedback]);
+
+  // Auto-expand and scroll to selected lead
+  useEffect(() => {
+    if (selectedLeadId) {
+      setExpandedRows(prev => ({ ...prev, [selectedLeadId]: true }));
+      // Scroll to the lead after a short delay to ensure it's rendered
+      setTimeout(() => {
+        const element = document.getElementById(`lead-${selectedLeadId}`);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [selectedLeadId]);
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
@@ -897,7 +909,11 @@ function ContactsSection({ activeFeedback }: { activeFeedback?: Feedback | "ALL"
               <TableBody>
                  {filtered.map((l) => (
                    <React.Fragment key={l.id}>
-                     <TableRow key={l.id}>
+                     <TableRow 
+                       key={l.id} 
+                       id={`lead-${l.id}`}
+                       className={selectedLeadId === l.id ? "bg-primary/10" : ""}
+                     >
                        <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
                          <TableCell className="font-medium">
                            <div className="flex items-start gap-3">
@@ -1137,6 +1153,12 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<string>("contacts");
   const [activeFeedback, setActiveFeedback] = useState<Feedback | "ALL" | undefined>(undefined);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>(undefined);
+
+  const handleContactClick = (leadId: string) => {
+    setSelectedLeadId(leadId);
+    setTab("contacts");
+  };
   return (
     <div className="min-h-screen">
       <header className="relative mb-4 overflow-hidden rounded-xl border bg-[linear-gradient(120deg,_hsl(var(--primary))_0%,_hsl(var(--accent))_100%)] text-primary-foreground">
@@ -1164,11 +1186,11 @@ function Page() {
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
-            <ContactsSection activeFeedback={activeFeedback} />
+            <ContactsSection activeFeedback={activeFeedback} selectedLeadId={selectedLeadId} />
           </TabsContent>
 
           <TabsContent value="reminders" className="space-y-4">
-            <RemindersSection />
+            <RemindersSection onContactClick={handleContactClick} />
           </TabsContent>
 
           <TabsContent value="whatsapp" className="space-y-4">

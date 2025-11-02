@@ -857,7 +857,11 @@ function ContactsSection({ activeFeedback, selectedLeadId }: { activeFeedback?: 
             <DialogTrigger asChild>
               <Button variant="outline" className="shrink-0"><UserPlus className="h-4 w-4" /> Add Lead</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xl max-h-[90vh]">
+            <DialogContent 
+              className="sm:max-w-xl max-h-[90vh]"
+              onInteractOutside={(e) => e.preventDefault()}
+              onEscapeKeyDown={(e) => e.preventDefault()}
+            >
               <DialogHeader>
                 <DialogTitle>{editing ? "Edit Lead" : "Add Lead"}</DialogTitle>
               </DialogHeader>

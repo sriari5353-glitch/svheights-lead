@@ -357,7 +357,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.log("WhatsApp URL:", whatsappUrl);
         
         // Open in new tab/window
-        const newWindow = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+        const newWindow = window.open(whatsappUrl, '_blank');
         
         if (newWindow) {
           successCount++;

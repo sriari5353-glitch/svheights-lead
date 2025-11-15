@@ -356,20 +356,19 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
         console.log("WhatsApp URL:", whatsappUrl);
         
-        // Open in new tab/window
-        const newWindow = window.open(whatsappUrl, '_blank');
+        // Create a temporary anchor element to open WhatsApp
+        // This method is more reliable and avoids popup blockers
+        const link = document.createElement('a');
+        link.href = whatsappUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
         
-        if (newWindow) {
+        // Add a small delay between each click to avoid browser throttling
+        setTimeout(() => {
+          link.click();
           successCount++;
           console.log(`WhatsApp opened successfully for ${lead.name}`);
-        } else {
-          console.warn(`Failed to open WhatsApp for ${lead.name} - popup blocked?`);
-          toast({ 
-            title: "Popup blocked", 
-            description: `Please allow popups and try again for ${lead.name}`, 
-            variant: "destructive" 
-          });
-        }
+        }, idx * 100); // 100ms delay between each
         
       } catch (error) {
         console.error(`Error opening WhatsApp for ${lead.name}:`, error);

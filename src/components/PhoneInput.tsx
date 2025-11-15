@@ -49,11 +49,27 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    
+    // Extract only digits from pasted content
+    const digitsOnly = pastedText.replace(/\D/g, '');
+    
+    if (digitsOnly) {
+      // Process and add India code if needed
+      const processed = addIndiaCode(digitsOnly);
+      setDisplayValue(processed);
+      onChange(processed);
+    }
+  };
+
   return (
     <Input
       type="tel"
       value={displayValue}
       onChange={handleChange}
+      onPaste={handlePaste}
       onFocus={handleFocus}
       onBlur={handleBlur}
       placeholder={placeholder}

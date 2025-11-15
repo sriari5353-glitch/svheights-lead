@@ -56,7 +56,7 @@ function useSEO() {
   }, []);
 }
 
-function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL") => void }) {
+function Metrics({ onToggleFilter, selectedFilters }: { onToggleFilter: (filter: Feedback | "ALL") => void; selectedFilters: (Feedback | "ALL")[] }) {
   const { getCounts } = useCRM();
   const counts = getCounts();
   const metrics = [
@@ -71,21 +71,31 @@ function Metrics({ onOpenContacts }: { onOpenContacts: (filter: Feedback | "ALL"
     <section className="space-y-6">
       {/* Circular Metrics */}
       <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8">
-        {metrics.map((metric) => (
-          <div
-            key={metric.title}
-            className="flex flex-col items-center cursor-pointer group"
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenContacts(metric.id)}
-            onKeyDown={(e) => { if (e.key === "Enter") onOpenContacts(metric.id); }}
-          >
-            <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full ${metric.color} flex items-center justify-center shadow-lg transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl`}>
-              <span className="text-lg md:text-2xl font-bold">{metric.value}</span>
+        {metrics.map((metric) => {
+          const isSelected = selectedFilters.includes(metric.id);
+          return (
+            <div
+              key={metric.title}
+              className="flex flex-col items-center cursor-pointer group"
+              role="button"
+              tabIndex={0}
+              onClick={() => onToggleFilter(metric.id)}
+              onKeyDown={(e) => { if (e.key === "Enter") onToggleFilter(metric.id); }}
+            >
+              <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full ${metric.color} flex items-center justify-center shadow-lg transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl relative ${isSelected ? 'ring-4 ring-primary ring-offset-2' : ''}`}>
+                <span className="text-lg md:text-2xl font-bold">{metric.value}</span>
+                {isSelected && (
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <span className="text-xs md:text-sm text-muted-foreground mt-2 text-center font-medium">{metric.title}</span>
             </div>
-            <span className="text-xs md:text-sm text-muted-foreground mt-2 text-center font-medium">{metric.title}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
     </section>
@@ -700,7 +710,7 @@ function NotesCalendarDialog({
   );
 }
 
-function ContactsSection({ activeFeedback, selectedLeadId }: { activeFeedback?: Feedback | "ALL"; selectedLeadId?: string }) {
+function ContactsSection({ activeFeedbacks, selectedLeadId }: { activeFeedbacks: (Feedback | "ALL")[]; selectedLeadId?: string }) {
   const { leads, deleteLead, updateLead } = useCRM();
   const [selection, setSelection] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
@@ -724,10 +734,17 @@ function ContactsSection({ activeFeedback, selectedLeadId }: { activeFeedback?: 
   const [editing, setEditing] = useState<Lead | undefined>(undefined);
 
   useEffect(() => {
-    if (activeFeedback !== undefined) {
-      setFb(activeFeedback === "ALL" ? undefined : (activeFeedback as Feedback));
+    if (activeFeedbacks.length > 0) {
+      // If "ALL" is selected or multiple feedbacks are selected, clear the filter
+      if (activeFeedbacks.includes("ALL") || activeFeedbacks.length > 1) {
+        setFb(undefined);
+      } else {
+        setFb(activeFeedbacks[0] as Feedback);
+      }
+    } else {
+      setFb(undefined);
     }
-  }, [activeFeedback]);
+  }, [activeFeedbacks]);
 
   // Auto-expand and scroll to selected lead
   useEffect(() => {
@@ -746,7 +763,12 @@ function ContactsSection({ activeFeedback, selectedLeadId }: { activeFeedback?: 
       const q = search.toLowerCase();
       const qMatch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q);
       const srcMatch = !src || l.source === src;
-      const fbMatch = !fb || l.feedback === fb;
+      
+      // Multi-select feedback filter
+      const fbMatch = activeFeedbacks.length === 0 || 
+        activeFeedbacks.includes("ALL") || 
+        activeFeedbacks.some(filter => filter === l.feedback);
+      
       const ratingMatch = !ratingFilter || (() => {
         const rating = l.rating || 0;
         switch (ratingFilter) {
@@ -763,7 +785,7 @@ function ContactsSection({ activeFeedback, selectedLeadId }: { activeFeedback?: 
       })();
       return qMatch && srcMatch && fbMatch && ratingMatch;
     });
-  }, [leads, search, src, fb, ratingFilter]);
+  }, [leads, search, src, activeFeedbacks, ratingFilter]);
 
   const allSelected = filtered.length > 0 && filtered.every((l) => selection[l.id]);
   const toggleAll = (v: boolean) => {
@@ -1156,11 +1178,31 @@ function Page() {
   const { leads } = useCRM();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<string>("contacts");
-  const [activeFeedback, setActiveFeedback] = useState<Feedback | "ALL" | undefined>(undefined);
+  const [selectedFilters, setSelectedFilters] = useState<(Feedback | "ALL")[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>(undefined);
 
   const handleContactClick = (leadId: string) => {
     setSelectedLeadId(leadId);
+    setTab("contacts");
+  };
+
+  const handleToggleFilter = (filter: Feedback | "ALL") => {
+    if (filter === "ALL") {
+      // If ALL is clicked, clear all other filters
+      setSelectedFilters(prev => prev.includes("ALL") ? [] : ["ALL"]);
+    } else {
+      setSelectedFilters(prev => {
+        // Remove "ALL" if it was selected
+        const withoutAll = prev.filter(f => f !== "ALL");
+        
+        // Toggle the clicked filter
+        if (withoutAll.includes(filter)) {
+          return withoutAll.filter(f => f !== filter);
+        } else {
+          return [...withoutAll, filter];
+        }
+      });
+    }
     setTab("contacts");
   };
   return (
@@ -1178,7 +1220,7 @@ function Page() {
       </header>
 
       <main className="space-y-6">
-        <Metrics onOpenContacts={(filter) => { setActiveFeedback(filter); setTab("contacts"); }} />
+        <Metrics onToggleFilter={handleToggleFilter} selectedFilters={selectedFilters} />
 
         <Tabs value={tab} onValueChange={setTab} className="mt-2">
           <TabsList>
@@ -1190,7 +1232,7 @@ function Page() {
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
-            <ContactsSection activeFeedback={activeFeedback} selectedLeadId={selectedLeadId} />
+            <ContactsSection activeFeedbacks={selectedFilters} selectedLeadId={selectedLeadId} />
           </TabsContent>
 
           <TabsContent value="reminders" className="space-y-4">

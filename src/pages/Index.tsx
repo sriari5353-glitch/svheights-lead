@@ -1042,7 +1042,7 @@ function ContactsSection({ activeFeedback, selectedLeadId }: { activeFeedback?: 
         </CardContent>
       </Card>
 
-      <BulkWhatsApp selectedIds={selectedIds} clearSelection={() => setSelection({})} />
+      <BulkWhatsApp selectedIds={selectedIds} clearSelection={() => setSelection({})} allLeads={filtered} />
     </section>
   );
 }

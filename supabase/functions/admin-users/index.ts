@@ -75,7 +75,7 @@ serve(async (req) => {
       if (existErr) return json({ error: existErr.message }, { status: 500 });
       if (existing) return json({ error: "Username already exists" }, { status: 400 });
 
-      const email = `${username}@noemail.local`;
+      const email = `${username}@leadmate.app`;
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,

@@ -26,6 +26,7 @@ const AdminPage: React.FC = () => {
 
   const [openCreate, setOpenCreate] = useState(false);
   const [newUsername, setNewUsername] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
   const [openReset, setOpenReset] = useState<string | null>(null);
@@ -59,12 +60,18 @@ const AdminPage: React.FC = () => {
     }
     try {
       const { error } = await supabase.functions.invoke("admin-users", {
-        body: { action: "create", username: newUsername.trim(), password: newPassword },
+        body: { 
+          action: "create", 
+          username: newUsername.trim(), 
+          email: newEmail.trim() || undefined,
+          password: newPassword 
+        },
       });
       if (error) throw error;
       toast("User created");
       setOpenCreate(false);
       setNewUsername("");
+      setNewEmail("");
       setNewPassword("");
       loadUsers();
     } catch (e: any) {
@@ -137,6 +144,10 @@ const AdminPage: React.FC = () => {
                 <div className="grid gap-2">
                   <Label>Username</Label>
                   <Input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder="unique username" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Email (optional)</Label>
+                  <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="user@example.com" />
                 </div>
                 <div className="grid gap-2">
                   <Label>Password</Label>

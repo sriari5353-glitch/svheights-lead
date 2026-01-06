@@ -64,7 +64,14 @@ serve(async (req) => {
     if (action === "create") {
       const username = String(payload.username || "").trim();
       const password = String(payload.password || "").trim();
+      const providedEmail = String(payload.email || "").trim();
+      
       if (!username || !password) return json({ error: "username and password required" }, { status: 400 });
+
+      // Validate email format if provided
+      if (providedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(providedEmail)) {
+        return json({ error: "Invalid email format" }, { status: 400 });
+      }
 
       // Ensure username is unique in profiles
       const { data: existing, error: existErr } = await supabaseAdmin
@@ -75,10 +82,13 @@ serve(async (req) => {
       if (existErr) return json({ error: existErr.message }, { status: 500 });
       if (existing) return json({ error: "Username already exists" }, { status: 400 });
 
-      // Create a valid email - sanitize username to only alphanumeric, use random suffix for uniqueness
-      const sanitized = username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
-      const email = `${sanitized}${randomSuffix}@leadmate.app`;
+      // Use provided email or generate one
+      let email = providedEmail;
+      if (!email) {
+        const sanitized = username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        email = `${sanitized}${randomSuffix}@leadmate.app`;
+      }
       
       console.log("Creating user with email:", email, "username:", username);
       

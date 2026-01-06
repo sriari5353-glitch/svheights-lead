@@ -66,12 +66,6 @@ serve(async (req) => {
       const password = String(payload.password || "").trim();
       if (!username || !password) return json({ error: "username and password required" }, { status: 400 });
 
-      // Validate username - only allow alphanumeric, dots, underscores, hyphens
-      const usernameRegex = /^[a-zA-Z0-9._-]+$/;
-      if (!usernameRegex.test(username)) {
-        return json({ error: "Username can only contain letters, numbers, dots, underscores, and hyphens" }, { status: 400 });
-      }
-
       // Ensure username is unique in profiles
       const { data: existing, error: existErr } = await supabaseAdmin
         .from("profiles")
@@ -81,9 +75,10 @@ serve(async (req) => {
       if (existErr) return json({ error: existErr.message }, { status: 500 });
       if (existing) return json({ error: "Username already exists" }, { status: 400 });
 
-      // Create a valid email from the sanitized username
-      const emailUsername = username.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const email = `${emailUsername}@leadmate.app`;
+      // Create a valid email - sanitize username to only alphanumeric, use random suffix for uniqueness
+      const sanitized = username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const email = `${sanitized}${randomSuffix}@leadmate.app`;
       
       console.log("Creating user with email:", email, "username:", username);
       

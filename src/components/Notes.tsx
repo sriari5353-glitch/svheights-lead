@@ -74,13 +74,7 @@ export default function Notes() {
 
   // Auto-save functionality
   const saveNote = useCallback(async (noteId?: string) => {
-    if (!user || !title.trim() || saving) return;
-
-    // Clear any pending auto-save to prevent race condition
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-      setAutoSaveTimeout(null);
-    }
+    if (!user || !title.trim()) return;
 
     setSaving(true);
     try {
@@ -116,6 +110,7 @@ export default function Notes() {
         const noteData: any = {
           user_id: user.id,
           title: title.trim(),
+          content: '',
         };
         
         if (selectedContactId && selectedContactId !== "none") {
@@ -148,7 +143,7 @@ export default function Notes() {
     } finally {
       setSaving(false);
     }
-  }, [user, title, selectedNote, selectedContactId, saving, autoSaveTimeout]);
+  }, [user, title, selectedNote, selectedContactId]);
 
   // Auto-save when title changes
   useEffect(() => {
@@ -156,12 +151,10 @@ export default function Notes() {
       clearTimeout(autoSaveTimeout);
     }
 
-    if (selectedNote && title !== selectedNote.title && !saving) {
+    if (selectedNote && title !== selectedNote.title) {
       const timeout = setTimeout(() => {
-        if (!saving) {
-          saveNote(selectedNote.id);
-        }
-      }, 2000);
+        saveNote(selectedNote.id);
+      }, 2000); // Auto-save after 2 seconds of inactivity
 
       setAutoSaveTimeout(timeout);
     }
@@ -171,8 +164,7 @@ export default function Notes() {
         clearTimeout(autoSaveTimeout);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, selectedNote?.id, saving]);
+  }, [title, selectedNote, saveNote]);
 
   // Delete selected notes
   const deleteSelectedNotes = async () => {

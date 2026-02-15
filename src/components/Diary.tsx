@@ -260,8 +260,24 @@ export default function Diary() {
                     <Textarea
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const textarea = e.currentTarget;
+                          const cursorPos = textarea.selectionStart;
+                          const textBefore = content.substring(0, cursorPos);
+                          const textAfter = content.substring(cursorPos);
+                          const newContent = textBefore + '\n• ' + textAfter;
+                          setContent(newContent);
+                          
+                          // Set cursor position after the bullet
+                          setTimeout(() => {
+                            textarea.selectionStart = textarea.selectionEnd = cursorPos + 3;
+                          }, 0);
+                        }
+                      }}
                       rows={12}
-                      placeholder={`Write your thoughts for ${format(selectedDate, 'PPP')}...`}
+                      placeholder={`• Write your thoughts for ${format(selectedDate, 'PPP')}...`}
                       disabled={loading || saving}
                       className="resize-none"
                     />

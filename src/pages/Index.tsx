@@ -805,10 +805,22 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: { activeFeedbacks:
     return entries.map(entry => {
       const match = entry.match(/^(\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M):\s*([\s\S]*)$/);
       if (match) {
+        // Parse d/M/yyyy format manually since JS Date expects M/d/yyyy
+        const parts = match[1].match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}), (.+)$/);
+        let parsedDate: Date;
+        if (parts) {
+          // Try as d/M/yyyy first, fall back to native parsing
+          parsedDate = new Date(`${parts[2]}/${parts[1]}/${parts[3]}, ${parts[4]}`);
+          if (isNaN(parsedDate.getTime())) {
+            parsedDate = new Date(match[1]);
+          }
+        } else {
+          parsedDate = new Date(match[1]);
+        }
         return {
           timestamp: match[1],
           content: match[2].trim(),
-          date: new Date(match[1])
+          date: isNaN(parsedDate.getTime()) ? new Date(0) : parsedDate
         };
       }
       // If no timestamp found, treat as legacy note
@@ -823,7 +835,8 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: { activeFeedbacks:
   const handleNotesUpdate = (leadId: string, newNotes: string) => {
     const lead = leads.find(l => l.id === leadId);
     if (lead && newNotes.trim()) {
-      const timestamp = new Date().toLocaleString();
+      const now = new Date();
+      const timestamp = format(now, "d/M/yyyy, h:mm:ss a");
       const timestampedNote = `${timestamp}: ${newNotes.trim()}`;
       const updatedNotes = lead.notes ? `${timestampedNote}\n\n${lead.notes}` : timestampedNote;
       updateLead({ ...lead, notes: updatedNotes });

@@ -799,8 +799,8 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   const parseTimestampedNotes = (notes: string) => {
     if (!notes.trim()) return [];
 
-    // Split by timestamp pattern and filter out empty entries
-    const entries = notes.split(/(?=\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M:)/).filter((entry) => entry.trim());
+    // Split by double newlines to avoid regex lookahead issues on iPhone/Safari
+    const entries = notes.split(/\n\n/).filter((entry) => entry.trim());
 
     return entries.map((entry) => {
       const match = entry.match(/^(\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2} [AP]M):\s*([\s\S]*)$/);

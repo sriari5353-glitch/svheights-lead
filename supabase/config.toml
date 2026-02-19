@@ -2,3 +2,7 @@ project_id = "xdbpsekyyifjrvarqwqj"
 
 [functions.admin-users]
 verify_jwt = true
+
+[functions.meta-webhook]
+verify_jwt = false
+

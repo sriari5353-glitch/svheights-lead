@@ -25,6 +25,7 @@ import Notes from "@/components/Notes";
 import RemindersSection from "@/components/RemindersSection";
 import { LeadForm } from "@/components/LeadForm";
 import DataUpload, { DownloadDataButton } from "@/components/DataUpload";
+import DataTransferHistory from "@/components/DataTransferHistory";
 import StarRating from "@/components/ui/star-rating";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -923,6 +924,7 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
             </DialogContent>
           </Dialog>
           <DownloadDataButton />
+          <DataTransferHistory />
         </div>
       </div>
 

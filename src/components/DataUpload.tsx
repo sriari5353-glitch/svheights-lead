@@ -11,6 +11,8 @@ import { toast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, Download, FileText, Globe, File } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useCRM } from "@/context/CRMContext";
+import { useAuth } from "@/context/AuthContext";
+import { logDataTransfer } from "@/components/DataTransferHistory";
 
 interface ParsedRow {
   [key: string]: any;
@@ -26,6 +28,7 @@ type FileType = 'excel' | 'csv' | 'google-sheets' | 'other';
 
 const DataUpload = () => {
   const { addLead, leads } = useCRM();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
@@ -200,6 +203,11 @@ const DataUpload = () => {
       title: "Import completed", 
       description: `${successCount} leads imported${errorCount > 0 ? `, ${errorCount} failed` : ''}` 
     });
+
+    // Log the import
+    if (user && successCount > 0) {
+      logDataTransfer(user.id, "import", successCount, undefined, `Imported ${successCount} leads from ${selectedFileType} file`);
+    }
 
     // Reset and close
     setParsedData([]);
@@ -550,6 +558,7 @@ const DataUpload = () => {
 
 export const DownloadDataButton = () => {
   const { leads } = useCRM();
+  const { user } = useAuth();
 
   const downloadAllData = () => {
     if (!leads || leads.length === 0) {
@@ -577,6 +586,12 @@ export const DownloadDataButton = () => {
     XLSX.writeFile(wb, `contacts_export_${new Date().toISOString().split('T')[0]}.xlsx`);
     
     toast({ title: "Download successful", description: `${exportData.length} contacts exported` });
+
+    // Log the export
+    if (user) {
+      const fileName = `contacts_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      logDataTransfer(user.id, "export", exportData.length, fileName, `Exported ${exportData.length} contacts`);
+    }
   };
 
   return (

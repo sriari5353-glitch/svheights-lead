@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
-import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight, Phone, MessageCircle, Star, Clock } from "lucide-react";
+import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOut, Edit, Calendar as CalendarIcon, UserPlus, ChevronDown, ChevronRight, Phone, MessageCircle, Star, Clock, Pencil, Check, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -1191,10 +1191,38 @@ function LogoutButton() {
 function Page() {
   useSEO();
   const { leads } = useCRM();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<string>("contacts");
   const [selectedFilters, setSelectedFilters] = useState<(Feedback | "ALL")[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>(undefined);
+  const [brandName, setBrandName] = useState("ANYA REALTY");
+  const [editingBrand, setEditingBrand] = useState(false);
+  const [brandDraft, setBrandDraft] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("brand_name")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.brand_name) setBrandName(data.brand_name);
+      });
+  }, [user]);
+
+  const saveBrandName = async () => {
+    if (!user || !brandDraft.trim()) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ brand_name: brandDraft.trim() } as any)
+      .eq("id", user.id);
+    if (!error) {
+      setBrandName(brandDraft.trim());
+      setEditingBrand(false);
+    }
+  };
 
   const handleContactClick = (leadId: string) => {
     setSelectedLeadId(leadId);
@@ -1225,7 +1253,36 @@ function Page() {
       <header className="relative mb-4 overflow-hidden rounded-xl border bg-[linear-gradient(120deg,_hsl(var(--primary))_0%,_hsl(var(--accent))_100%)] text-primary-foreground">
         <div className="px-6 py-4 md:px-10">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-xl md:text-2xl font-semibold">ANYA REALTY</h1>
+            {editingBrand ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={brandDraft}
+                  onChange={(e) => setBrandDraft(e.target.value)}
+                  className="h-8 w-48 bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground placeholder:text-primary-foreground/50"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveBrandName();
+                    if (e.key === "Escape") setEditingBrand(false);
+                  }}
+                />
+                <button onClick={saveBrandName} className="p-1 hover:bg-primary-foreground/20 rounded">
+                  <Check className="h-4 w-4" />
+                </button>
+                <button onClick={() => setEditingBrand(false)} className="p-1 hover:bg-primary-foreground/20 rounded">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-semibold">{brandName}</h1>
+                <button
+                  onClick={() => { setBrandDraft(brandName); setEditingBrand(true); }}
+                  className="p-1 hover:bg-primary-foreground/20 rounded opacity-70 hover:opacity-100 transition-opacity"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <DataUpload />
               <LogoutButton />

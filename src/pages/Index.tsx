@@ -1216,11 +1216,14 @@ function Page() {
     if (!user || !brandDraft.trim()) return;
     const { error } = await supabase
       .from("profiles")
-      .update({ brand_name: brandDraft.trim() } as any)
+      .update({ brand_name: brandDraft.trim() })
       .eq("id", user.id);
-    if (!error) {
+    if (error) {
+      toast({ title: "Error", description: "Failed to save brand name: " + error.message, variant: "destructive" });
+    } else {
       setBrandName(brandDraft.trim());
       setEditingBrand(false);
+      toast({ title: "Saved", description: "Brand name updated successfully" });
     }
   };
 

@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      data_transfer_history: {
+        Row: {
+          created_at: string
+          details: string | null
+          file_name: string | null
+          id: string
+          record_count: number
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          file_name?: string | null
+          id?: string
+          record_count?: number
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          file_name?: string | null
+          id?: string
+          record_count?: number
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       diary: {
         Row: {
           contact_id: string | null
@@ -224,6 +257,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          brand_name: string | null
           created_at: string
           email: string
           full_name: string | null
@@ -233,6 +267,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          brand_name?: string | null
           created_at?: string
           email: string
           full_name?: string | null
@@ -242,6 +277,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          brand_name?: string | null
           created_at?: string
           email?: string
           full_name?: string | null

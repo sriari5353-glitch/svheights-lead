@@ -17,6 +17,7 @@ interface Profile {
   email: string;
   created_at: string;
   is_active: boolean;
+  brand_name: string | null;
 }
 
 const AdminPage: React.FC = () => {
@@ -35,6 +36,9 @@ const AdminPage: React.FC = () => {
   const [editingUsername, setEditingUsername] = useState<string | null>(null);
   const [editUsernameValue, setEditUsernameValue] = useState("");
 
+  const [editingBrand, setEditingBrand] = useState<string | null>(null);
+  const [editBrandValue, setEditBrandValue] = useState("");
+
   useEffect(() => {
     document.title = "Admin | LeadMate";
   }, []);
@@ -42,7 +46,7 @@ const AdminPage: React.FC = () => {
   const loadUsers = async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-users", { body: { action: "list" } });
+      const { data, error } = await supabase.functions.invoke("admin-users", { body: { action: "list" } }) as any;
       if (error) throw error;
       setUsers((data as any)?.users || []);
     } catch (e: any) {
@@ -145,6 +149,21 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const updateBrand = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-users", {
+        body: { action: "update_brand", user_id: userId, brand_name: editBrandValue.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast("Brand name updated");
+      setEditingBrand(null);
+      loadUsers();
+    } catch (e: any) {
+      toast(e.message || "Failed to update brand name");
+    }
+  };
+
   if (loading) return <div className="p-6">Loading…</div>;
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -195,6 +214,7 @@ const AdminPage: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Username</TableHead>
+                  <TableHead>Brand Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Active</TableHead>
                   <TableHead>Created</TableHead>
@@ -222,6 +242,27 @@ const AdminPage: React.FC = () => {
                           onClick={() => { setEditingUsername(u.id); setEditUsernameValue(u.username || ""); }}
                         >
                           {u.username || "—"}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingBrand === u.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editBrandValue}
+                            onChange={(e) => setEditBrandValue(e.target.value)}
+                            className="h-7 w-32 text-sm"
+                            onKeyDown={(e) => e.key === "Enter" && updateBrand(u.id)}
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => updateBrand(u.id)}>✓</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingBrand(null)}>✕</Button>
+                        </div>
+                      ) : (
+                        <span
+                          className="cursor-pointer hover:underline"
+                          onClick={() => { setEditingBrand(u.id); setEditBrandValue(u.brand_name || ""); }}
+                        >
+                          {u.brand_name || "—"}
                         </span>
                       )}
                     </TableCell>
@@ -256,7 +297,7 @@ const AdminPage: React.FC = () => {
                 ))}
                 {users.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">No users found</TableCell>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">No users found</TableCell>
                   </TableRow>
                 )}
               </TableBody>

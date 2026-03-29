@@ -123,6 +123,28 @@ serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (action === "update_username") {
+      const user_id = String(payload.user_id || "").trim();
+      const username = String(payload.username || "").trim();
+      if (!user_id || !username) return json({ error: "user_id and username required" }, { status: 400 });
+      
+      // Check uniqueness
+      const { data: existing } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .neq("id", user_id)
+        .maybeSingle();
+      if (existing) return json({ error: "Username already exists" }, { status: 400 });
+      
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .update({ username })
+        .eq("id", user_id);
+      if (error) return json({ error: error.message }, { status: 500 });
+      return json({ ok: true });
+    }
+
     if (action === "deactivate" || action === "activate") {
       const user_id = String(payload.user_id || "").trim();
       if (!user_id) return json({ error: "user_id required" }, { status: 400 });

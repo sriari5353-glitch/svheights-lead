@@ -32,6 +32,9 @@ const AdminPage: React.FC = () => {
   const [openReset, setOpenReset] = useState<string | null>(null);
   const [newPwd, setNewPwd] = useState("");
 
+  const [editingUsername, setEditingUsername] = useState<string | null>(null);
+  const [editUsernameValue, setEditUsernameValue] = useState("");
+
   useEffect(() => {
     document.title = "Admin | LeadMate";
   }, []);
@@ -123,6 +126,25 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const updateUsername = async (userId: string) => {
+    if (!editUsernameValue.trim()) {
+      toast("Enter a username");
+      return;
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-users", {
+        body: { action: "update_username", user_id: userId, username: editUsernameValue.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast("Username updated");
+      setEditingUsername(null);
+      loadUsers();
+    } catch (e: any) {
+      toast(e.message || "Failed to update username");
+    }
+  };
+
   if (loading) return <div className="p-6">Loading…</div>;
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -182,7 +204,27 @@ const AdminPage: React.FC = () => {
               <TableBody>
                 {users.map((u) => (
                   <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.username || "—"}</TableCell>
+                    <TableCell className="font-medium">
+                      {editingUsername === u.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editUsernameValue}
+                            onChange={(e) => setEditUsernameValue(e.target.value)}
+                            className="h-7 w-32 text-sm"
+                            onKeyDown={(e) => e.key === "Enter" && updateUsername(u.id)}
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => updateUsername(u.id)}>✓</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingUsername(null)}>✕</Button>
+                        </div>
+                      ) : (
+                        <span
+                          className="cursor-pointer hover:underline"
+                          onClick={() => { setEditingUsername(u.id); setEditUsernameValue(u.username || ""); }}
+                        >
+                          {u.username || "—"}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>{u.is_active ? "Yes" : "No"}</TableCell>
                     <TableCell>{new Date(u.created_at).toLocaleString()}</TableCell>

@@ -55,7 +55,7 @@ serve(async (req) => {
     if (action === "list") {
       const { data, error } = await supabaseAdmin
         .from("profiles")
-        .select("id, username, full_name, email, created_at, is_active")
+        .select("id, username, full_name, email, created_at, is_active, brand_name")
         .order("created_at", { ascending: false });
       if (error) return json({ error: error.message }, { status: 500 });
       return json({ users: data });
@@ -151,6 +151,18 @@ serve(async (req) => {
       const { error } = await supabaseAdmin
         .from("profiles")
         .update({ is_active: action === "activate" })
+        .eq("id", user_id);
+      if (error) return json({ error: error.message }, { status: 500 });
+      return json({ ok: true });
+    }
+
+    if (action === "update_brand") {
+      const user_id = String(payload.user_id || "").trim();
+      const brand_name = String(payload.brand_name ?? "").trim();
+      if (!user_id) return json({ error: "user_id required" }, { status: 400 });
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .update({ brand_name: brand_name || null })
         .eq("id", user_id);
       if (error) return json({ error: error.message }, { status: 500 });
       return json({ ok: true });

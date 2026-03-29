@@ -17,6 +17,7 @@ interface Profile {
   email: string;
   created_at: string;
   is_active: boolean;
+  brand_name: string | null;
 }
 
 const AdminPage: React.FC = () => {
@@ -35,6 +36,9 @@ const AdminPage: React.FC = () => {
   const [editingUsername, setEditingUsername] = useState<string | null>(null);
   const [editUsernameValue, setEditUsernameValue] = useState("");
 
+  const [editingBrand, setEditingBrand] = useState<string | null>(null);
+  const [editBrandValue, setEditBrandValue] = useState("");
+
   useEffect(() => {
     document.title = "Admin | LeadMate";
   }, []);
@@ -42,7 +46,7 @@ const AdminPage: React.FC = () => {
   const loadUsers = async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-users", { body: { action: "list" } });
+      const { data, error } = await supabase.functions.invoke("admin-users", { body: { action: "list" } }) as any;
       if (error) throw error;
       setUsers((data as any)?.users || []);
     } catch (e: any) {

@@ -19,77 +19,8 @@ function json(body: any, init: ResponseInit = {}) {
   });
 }
 
-const AUTO_ADMIN_EMAIL = "sriari5353@gmail.com";
-
-async function ensureProfileAndRoles(supabaseAdmin: any, authUser: any) {
-  const userId = authUser?.id;
-  if (!userId) return;
-
-  const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (profileCheckError) throw profileCheckError;
-
-  if (!existingProfile) {
-    const rawUsername = authUser?.user_metadata?.username;
-    const rawFullName = authUser?.user_metadata?.full_name;
-    const normalizedEmail = String(authUser?.email || "").trim();
-
-    const { error: insertProfileError } = await supabaseAdmin
-      .from("profiles")
-      .insert({
-        id: userId,
-        username: rawUsername ? String(rawUsername).trim() : null,
-        full_name: rawFullName ? String(rawFullName).trim() : null,
-        email: normalizedEmail || `${userId}@leadmate.app`,
-      });
-
-    if (insertProfileError) throw insertProfileError;
-  }
-
-  const { error: userRoleError } = await supabaseAdmin
-    .from("user_roles")
-    .upsert(
-      { user_id: userId, role: "user" },
-      { onConflict: "user_id,role", ignoreDuplicates: true }
-    );
-
-  if (userRoleError) throw userRoleError;
-
-  if (String(authUser?.email || "").toLowerCase() === AUTO_ADMIN_EMAIL) {
-    const { error: adminRoleError } = await supabaseAdmin
-      .from("user_roles")
-      .upsert(
-        { user_id: userId, role: "admin" },
-        { onConflict: "user_id,role", ignoreDuplicates: true }
-      );
-
-    if (adminRoleError) throw adminRoleError;
-  }
-}
-
-async function syncProfilesFromAuth(supabaseAdmin: any) {
-  const perPage = 100;
-  let page = 1;
-
-  while (true) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-
-    const authUsers = data?.users || [];
-    for (const authUser of authUsers) {
-      await ensureProfileAndRoles(supabaseAdmin, authUser);
-    }
-
-    if (authUsers.length < perPage) break;
-    page += 1;
-  }
-}
-
 serve(async (req) => {
+  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -104,6 +35,7 @@ serve(async (req) => {
     const user = userRes?.user;
     if (!user) return json({ error: "Unauthorized" }, { status: 401 });
 
+    // Verify admin role
     const { data: roles, error: rolesErr } = await supabaseUserClient
       .from("user_roles")
       .select("role")
@@ -117,10 +49,10 @@ serve(async (req) => {
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
     const { action, ...payload } = await req.json().catch(() => ({ action: "list" }));
 
     if (action === "list") {
-      await syncProfilesFromAuth(supabaseAdmin);
       const { data, error } = await supabaseAdmin
         .from("profiles")
         .select("id, username, full_name, email, created_at, is_active")
@@ -133,15 +65,15 @@ serve(async (req) => {
       const username = String(payload.username || "").trim();
       const password = String(payload.password || "").trim();
       const providedEmail = String(payload.email || "").trim();
+      
+      if (!username || !password) return json({ error: "username and password required" }, { status: 400 });
 
-      if (!username || !password) {
-        return json({ error: "username and password required" }, { status: 400 });
-      }
-
+      // Validate email format if provided
       if (providedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(providedEmail)) {
         return json({ error: "Invalid email format" }, { status: 400 });
       }
 
+      // Ensure username is unique in profiles
       const { data: existing, error: existErr } = await supabaseAdmin
         .from("profiles")
         .select("id")
@@ -150,25 +82,27 @@ serve(async (req) => {
       if (existErr) return json({ error: existErr.message }, { status: 500 });
       if (existing) return json({ error: "Username already exists" }, { status: 400 });
 
+      // Use provided email or generate one
       let email = providedEmail;
       if (!email) {
-        const sanitized = username.toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
+        const sanitized = username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
         const randomSuffix = Math.random().toString(36).substring(2, 8);
         email = `${sanitized}${randomSuffix}@leadmate.app`;
       }
-
+      
+      console.log("Creating user with email:", email, "username:", username);
+      
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
         user_metadata: { username },
       });
-      if (error) return json({ error: error.message }, { status: 500 });
-
-      if (data?.user) {
-        await ensureProfileAndRoles(supabaseAdmin, data.user);
+      if (error) {
+        console.error("Create user error:", error);
+        return json({ error: error.message }, { status: 500 });
       }
-
+      console.log("User created successfully:", data.user?.id);
       return json({ ok: true, user_id: data.user?.id });
     }
 

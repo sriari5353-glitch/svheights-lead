@@ -1,1 +1,0 @@
-ALTER TABLE public.profiles ADD COLUMN brand_name text DEFAULT 'ANYA REALTY';

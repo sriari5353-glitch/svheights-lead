@@ -238,11 +238,16 @@ const AdminPage: React.FC = () => {
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingUsername(null)}>✕</Button>
                         </div>
                       ) : (
-                        <span
-                          className="cursor-pointer hover:underline"
-                          onClick={() => { setEditingUsername(u.id); setEditUsernameValue(u.username || ""); }}
-                        >
+                        <span className="flex items-center gap-1">
                           {u.username || "—"}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => { setEditingUsername(u.id); setEditUsernameValue(u.username || ""); }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
                         </span>
                       )}
                     </TableCell>

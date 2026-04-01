@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Pencil } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";

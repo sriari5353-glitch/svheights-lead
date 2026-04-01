@@ -264,11 +264,16 @@ const AdminPage: React.FC = () => {
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingBrand(null)}>✕</Button>
                         </div>
                       ) : (
-                        <span
-                          className="cursor-pointer hover:underline"
-                          onClick={() => { setEditingBrand(u.id); setEditBrandValue(u.brand_name || ""); }}
-                        >
+                        <span className="flex items-center gap-1">
                           {u.brand_name || "—"}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => { setEditingBrand(u.id); setEditBrandValue(u.brand_name || ""); }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
                         </span>
                       )}
                     </TableCell>

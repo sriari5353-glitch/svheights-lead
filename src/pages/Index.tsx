@@ -1189,10 +1189,24 @@ function LogoutButton() {
 function Page() {
   useSEO();
   const { leads } = useCRM();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<string>("contacts");
   const [selectedFilters, setSelectedFilters] = useState<(Feedback | "ALL")[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>(undefined);
+  const [brandName, setBrandName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("brand_name")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.brand_name) setBrandName(data.brand_name);
+      });
+  }, [user]);
 
   const handleContactClick = (leadId: string) => {
     setSelectedLeadId(leadId);

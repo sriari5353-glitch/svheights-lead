@@ -1189,10 +1189,24 @@ function LogoutButton() {
 function Page() {
   useSEO();
   const { leads } = useCRM();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<string>("contacts");
   const [selectedFilters, setSelectedFilters] = useState<(Feedback | "ALL")[]>([]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>(undefined);
+  const [brandName, setBrandName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("brand_name")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.brand_name) setBrandName(data.brand_name);
+      });
+  }, [user]);
 
   const handleContactClick = (leadId: string) => {
     setSelectedLeadId(leadId);
@@ -1223,7 +1237,7 @@ function Page() {
       <header className="relative mb-4 overflow-hidden rounded-xl border bg-[linear-gradient(120deg,_hsl(var(--primary))_0%,_hsl(var(--accent))_100%)] text-primary-foreground">
         <div className="px-6 py-4 md:px-10">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-xl md:text-2xl font-semibold">ANYA REALTY</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">{brandName || "CRM"}</h1>
             <div className="flex items-center gap-2">
               <DataUpload />
               <LogoutButton />

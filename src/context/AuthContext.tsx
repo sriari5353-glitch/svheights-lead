@@ -7,6 +7,8 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  viewingUserId: string | null;
+  setViewingUserId: (id: string | null) => void;
   signOut: () => Promise<void>;
 }
 

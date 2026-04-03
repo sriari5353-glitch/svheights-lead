@@ -121,7 +121,10 @@ function usePersistentReducer() {
 
 export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = usePersistentReducer();
-  const { user } = useAuth();
+  const { user, isAdmin, viewingUserId } = useAuth();
+
+  // The effective user ID for data queries - admin can view other users
+  const effectiveUserId = isAdmin && viewingUserId ? viewingUserId : user?.id;
 
   // Notifications for upcoming reminders
   useEffect(() => {
@@ -133,12 +136,17 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Initial load from Supabase
   const loadAll = async () => {
-    console.log("Loading data from Supabase...");
+    if (!effectiveUserId) return;
+    console.log("Loading data from Supabase for user:", effectiveUserId);
+
+    // When admin views another user, filter by that user's ID
+    const leadsQuery = supabase.from("leads").select("*").eq("created_by", effectiveUserId).order("created_at", { ascending: false });
+    const remindersQuery = supabase.from("reminders").select("*").eq("created_by", effectiveUserId).order("datetime", { ascending: true });
+    const historyQuery = supabase.from("whatsapp_history").select("*").eq("created_by", effectiveUserId).order("date", { ascending: false });
+    const schedulesQuery = supabase.from("schedules").select("*").eq("created_by", effectiveUserId).order("datetime", { ascending: true });
+
     const [leadsRes, remindersRes, historyRes, schedulesRes] = await Promise.all([
-      supabase.from("leads").select("*").order("created_at", { ascending: false }),
-      supabase.from("reminders").select("*").order("datetime", { ascending: true }),
-      supabase.from("whatsapp_history").select("*").order("date", { ascending: false }),
-      supabase.from("schedules").select("*").order("datetime", { ascending: true }),
+      leadsQuery, remindersQuery, historyQuery, schedulesQuery,
     ]);
 
     const mapLead = (r: any): Lead => ({
@@ -175,7 +183,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (user) {
       loadAll().catch(console.error);
     }
-  }, [user]);
+  }, [user, effectiveUserId]);
 
   // Enhanced real-time subscriptions with granular updates
   useEffect(() => {

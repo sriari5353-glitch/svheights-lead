@@ -121,10 +121,10 @@ function usePersistentReducer() {
 
 export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = usePersistentReducer();
-  const { user, isAdmin, viewingUserId } = useAuth();
+  const { user, isAdmin } = useAuth();
 
-  // The effective user ID for data queries - admin can view other users
-  const effectiveUserId = isAdmin && viewingUserId ? viewingUserId : user?.id;
+  // The effective user ID for data queries - always the logged-in user
+  const effectiveUserId = user?.id;
 
   // Notifications for upcoming reminders
   useEffect(() => {

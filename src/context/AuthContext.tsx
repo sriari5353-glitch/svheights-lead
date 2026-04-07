@@ -7,8 +7,6 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
-  viewingUserId: string | null;
-  setViewingUserId: (id: string | null) => void;
   signOut: () => Promise<void>;
 }
 
@@ -31,14 +29,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Listener first
     const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      // Defer role fetch to avoid deadlocks
       if (s?.user) {
         setTimeout(async () => {
           const { data } = await supabase
@@ -47,7 +42,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .eq("user_id", s.user.id);
           setIsAdmin(Boolean(data?.some((r) => r.role === "admin")));
 
-          // Enforce deactivated accounts cannot access the app
           const { data: profile } = await supabase
             .from("profiles")
             .select("is_active")
@@ -72,7 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // Then check existing session
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
@@ -95,8 +88,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const value = useMemo(
-    () => ({ user, session, loading, isAdmin, viewingUserId, setViewingUserId, signOut }),
-    [user, session, loading, isAdmin, viewingUserId]
+    () => ({ user, session, loading, isAdmin, signOut }),
+    [user, session, loading, isAdmin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

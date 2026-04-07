@@ -20,7 +20,6 @@ const RoleSwitch: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [showUserDialog, setShowUserDialog] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {

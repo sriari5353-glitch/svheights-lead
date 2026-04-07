@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -17,6 +17,27 @@ interface UserProfile {
   email: string;
 }
 
+const SESSION_CACHE_KEY = "cached_user_sessions";
+
+const getCachedSessions = (): Record<string, { access_token: string; refresh_token: string }> => {
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const cacheSession = (userId: string, access_token: string, refresh_token: string) => {
+  const sessions = getCachedSessions();
+  sessions[userId] = { access_token, refresh_token };
+  sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(sessions));
+};
+
+const clearAllCachedSessions = () => {
+  sessionStorage.removeItem(SESSION_CACHE_KEY);
+};
+
 const RoleSwitch: React.FC = () => {
   const { isAdmin, user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -27,6 +48,18 @@ const RoleSwitch: React.FC = () => {
   const [switchTarget, setSwitchTarget] = useState<UserProfile | null>(null);
   const [password, setPassword] = useState("");
   const [switching, setSwitching] = useState(false);
+
+  // Cache the current user's session whenever it changes
+  useEffect(() => {
+    if (!user) return;
+    const cacheCurrentSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        cacheSession(user.id, data.session.access_token, data.session.refresh_token);
+      }
+    };
+    cacheCurrentSession();
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -66,8 +99,34 @@ const RoleSwitch: React.FC = () => {
 
   const label = currentProfile ? getInitial(currentProfile) : "U";
 
-  const handleSelectUser = (targetUser: UserProfile) => {
-    if (targetUser.id === user.id) return; // already logged in as this user
+  const cachedSessions = getCachedSessions();
+
+  const handleSelectUser = async (targetUser: UserProfile) => {
+    if (targetUser.id === user.id) return;
+
+    // Check if we have a cached session for this user
+    const cached = cachedSessions[targetUser.id];
+    if (cached) {
+      setSwitching(true);
+      setShowMenu(false);
+      try {
+        const { error } = await supabase.auth.setSession({
+          access_token: cached.access_token,
+          refresh_token: cached.refresh_token,
+        });
+        if (!error) {
+          window.location.href = "/";
+          return;
+        }
+        // If cached session is expired/invalid, fall through to password prompt
+      } catch {
+        // Fall through to password prompt
+      } finally {
+        setSwitching(false);
+      }
+    }
+
+    // No cached session or it failed — ask for password
     setSwitchTarget(targetUser);
     setPassword("");
     setShowMenu(false);
@@ -77,25 +136,28 @@ const RoleSwitch: React.FC = () => {
     if (!switchTarget || !password) return;
     setSwitching(true);
     try {
-      // Look up the email for the target user
       const emailToUse = switchTarget.email;
 
-      // Sign out current session
+      // Sign out current session (local only so we don't invalidate other sessions)
       try {
-        await supabase.auth.signOut({ scope: "global" as any });
+        await supabase.auth.signOut({ scope: "local" as any });
       } catch (_) {}
 
       await new Promise((r) => setTimeout(r, 100));
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: emailToUse,
         password,
       });
 
       if (error) {
         toast("Invalid password");
-        // Re-sign in as original user failed, reload to auth
         return;
+      }
+
+      // Cache the new session
+      if (data.session) {
+        cacheSession(switchTarget.id, data.session.access_token, data.session.refresh_token);
       }
 
       setSwitchTarget(null);
@@ -106,6 +168,12 @@ const RoleSwitch: React.FC = () => {
     } finally {
       setSwitching(false);
     }
+  };
+
+  const handleSignOut = () => {
+    clearAllCachedSessions();
+    signOut();
+    setShowMenu(false);
   };
 
   return (
@@ -148,6 +216,7 @@ const RoleSwitch: React.FC = () => {
                 <div className="max-h-52 overflow-y-auto space-y-0.5">
                   {users.map((u) => {
                     const isCurrent = u.id === user?.id;
+                    const hasCached = !!cachedSessions[u.id];
                     return (
                       <Button
                         key={u.id}
@@ -155,7 +224,7 @@ const RoleSwitch: React.FC = () => {
                         size="sm"
                         className="w-full justify-start text-left p-2 h-auto"
                         onClick={() => handleSelectUser(u)}
-                        disabled={isCurrent}
+                        disabled={isCurrent || switching}
                       >
                         <div className="flex items-center gap-2 w-full">
                           <Avatar className="h-6 w-6 flex-shrink-0">
@@ -172,6 +241,9 @@ const RoleSwitch: React.FC = () => {
                             <div className="text-[10px] text-primary font-medium flex-shrink-0">
                               Active
                             </div>
+                          )}
+                          {!isCurrent && hasCached && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" title="Signed in" />
                           )}
                         </div>
                       </Button>
@@ -202,10 +274,7 @@ const RoleSwitch: React.FC = () => {
                 variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={() => {
-                  signOut();
-                  setShowMenu(false);
-                }}
+                onClick={handleSignOut}
               >
                 Sign Out
               </Button>

@@ -77,7 +77,6 @@ const RoleSwitch: React.FC = () => {
     } else {
       setViewingUserId(targetUser.id);
     }
-    setShowUserDialog(false);
     setShowMenu(false);
   };
 

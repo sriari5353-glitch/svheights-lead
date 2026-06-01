@@ -168,32 +168,6 @@ serve(async (req) => {
       return json({ ok: true });
     }
 
-    if (action === "impersonate") {
-      const user_id = String(payload.user_id || "").trim();
-      if (!user_id) return json({ error: "user_id required" }, { status: 400 });
-
-      // Look up target user's email
-      const { data: target, error: targetErr } = await supabaseAdmin
-        .from("profiles")
-        .select("email, is_active")
-        .eq("id", user_id)
-        .maybeSingle();
-      if (targetErr || !target) return json({ error: "Target user not found" }, { status: 404 });
-      if (target.is_active === false) return json({ error: "Target user is deactivated" }, { status: 400 });
-
-      // Generate a magic link to capture a hashed token we can verify client-side
-      const { data: linkData, error: linkErr } = await (supabaseAdmin as any).auth.admin.generateLink({
-        type: "magiclink",
-        email: target.email,
-      });
-      if (linkErr) return json({ error: linkErr.message }, { status: 500 });
-
-      const hashed = (linkData as any)?.properties?.hashed_token;
-      if (!hashed) return json({ error: "Failed to generate token" }, { status: 500 });
-
-      return json({ token_hash: hashed, email: target.email });
-    }
-
     return json({ error: "Unknown action" }, { status: 400 });
   } catch (e: any) {
     return json({ error: e?.message || "Unexpected error" }, { status: 500 });

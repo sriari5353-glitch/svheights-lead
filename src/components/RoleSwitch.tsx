@@ -210,7 +210,7 @@ const RoleSwitch: React.FC = () => {
             </div>
 
             {/* User list for switching */}
-            {users.length > 0 && (
+            {isAdmin && users.length > 0 && (
               <div className="border-b border-border pb-2">
                 <div className="text-xs font-medium text-muted-foreground mb-1">Switch User</div>
                 <div className="max-h-52 overflow-y-auto space-y-0.5">

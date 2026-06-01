@@ -104,11 +104,12 @@ const RoleSwitch: React.FC = () => {
   const handleSelectUser = async (targetUser: UserProfile) => {
     if (targetUser.id === user.id) return;
 
-    // Check if we have a cached session for this user
+    setSwitching(true);
+    setShowMenu(false);
+
+    // 1) Try cached session first (instant switch back)
     const cached = cachedSessions[targetUser.id];
     if (cached) {
-      setSwitching(true);
-      setShowMenu(false);
       try {
         const { error } = await supabase.auth.setSession({
           access_token: cached.access_token,
@@ -118,18 +119,48 @@ const RoleSwitch: React.FC = () => {
           window.location.href = "/";
           return;
         }
-        // If cached session is expired/invalid, fall through to password prompt
       } catch {
-        // Fall through to password prompt
-      } finally {
-        setSwitching(false);
+        // fall through to impersonate
       }
     }
 
-    // No cached session or it failed — ask for password
-    setSwitchTarget(targetUser);
-    setPassword("");
-    setShowMenu(false);
+    // 2) Admin-only: impersonate via edge function (no password)
+    if (isAdmin) {
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-users", {
+          body: { action: "impersonate", user_id: targetUser.id },
+        });
+        if (error || !data?.token_hash) {
+          toast(error?.message || data?.error || "Switch failed");
+          setSwitching(false);
+          return;
+        }
+
+        // Sign out current session locally so verifyOtp establishes the new one cleanly
+        try { await supabase.auth.signOut({ scope: "local" as any }); } catch (_) {}
+        await new Promise((r) => setTimeout(r, 50));
+
+        const { data: verifyData, error: verifyErr } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: "magiclink",
+        });
+        if (verifyErr || !verifyData.session) {
+          toast(verifyErr?.message || "Switch failed");
+          setSwitching(false);
+          return;
+        }
+        cacheSession(targetUser.id, verifyData.session.access_token, verifyData.session.refresh_token);
+        window.location.href = "/";
+        return;
+      } catch (err: any) {
+        toast(err?.message || "Switch failed");
+        setSwitching(false);
+        return;
+      }
+    }
+
+    // 3) Non-admins: not allowed
+    setSwitching(false);
   };
 
   const handleSwitchConfirm = async () => {

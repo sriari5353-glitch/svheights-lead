@@ -165,12 +165,8 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6">Loading…</div>;
-  // Wait for role to resolve before deciding to redirect, otherwise we bounce
-  // back to "/" while isAdmin is still being fetched, causing flicker.
-  if (!isAdmin) {
-    return <div className="p-6">Checking permissions…</div>;
-  }
+  if (loading || !rolesLoaded) return <div className="p-6">Loading…</div>;
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <main className="p-6 space-y-4">

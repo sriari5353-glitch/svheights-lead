@@ -717,6 +717,9 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
   const [ratingFilter, setRatingFilter] = useState<string | undefined>(undefined);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
@@ -757,6 +760,25 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
       }, 100);
     }
   }, [selectedLeadId]);
+
+  // Expandable search: auto-focus when expanded, collapse on outside click
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isSearchExpanded &&
+        search === "" &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchExpanded, search]);
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
@@ -846,11 +868,49 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-8" placeholder="Search by name or phone" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+        <div className="flex flex-1 items-center gap-2" ref={searchContainerRef}>
+          {!isSearchExpanded ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0 shrink-0"
+              onClick={() => setIsSearchExpanded(true)}
+              aria-label="Search leads"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2 flex-1 animate-in fade-in zoom-in-95 duration-200">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                placeholder="Search by name or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 min-w-0"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setSearch("");
+                    setIsSearchExpanded(false);
+                  }
+                }}
+              />
+              {search && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 shrink-0"
+                  onClick={() => {
+                    setSearch("");
+                    searchInputRef.current?.focus();
+                  }}
+                  aria-label="Clear search"
+                >
+                  <span className="text-muted-foreground text-xs">✕</span>
+                </Button>
+              )}
+            </div>
+          )}
           <div className="hidden md:flex items-center gap-2 text-muted-foreground"><Filter className="h-4 w-4" /> Filters</div>
           <Select value={src} onValueChange={(v) => setSrc(v === "ALL" ? undefined : v as LeadSource)}>
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="Source" /></SelectTrigger>

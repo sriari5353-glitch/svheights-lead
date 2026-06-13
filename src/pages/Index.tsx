@@ -868,26 +868,25 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-1 items-center gap-2" ref={searchContainerRef}>
-          {!isSearchExpanded ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 p-0 shrink-0"
-              onClick={() => setIsSearchExpanded(true)}
-              aria-label="Search leads"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2 flex-1 animate-in fade-in zoom-in-95 duration-200">
+        <div className="relative flex items-center gap-2" ref={searchContainerRef}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0 shrink-0"
+            onClick={() => setIsSearchExpanded(true)}
+            aria-label="Search leads"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+          {isSearchExpanded && (
+            <div className="absolute left-0 top-0 z-50 flex items-center gap-2 rounded-md border bg-background shadow-lg p-1 pl-2 w-[min(560px,calc(100vw-2rem))] animate-in fade-in zoom-in-95 duration-200">
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <Input
                 ref={searchInputRef}
                 placeholder="Search by name or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 min-w-0"
+                className="flex-1 min-w-0 border-0 shadow-none focus-visible:ring-0"
                 onKeyDown={(e) => {
                   if (e.key === "Escape") {
                     setSearch("");
@@ -909,6 +908,18 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                   <span className="text-muted-foreground text-xs">✕</span>
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 shrink-0"
+                onClick={() => {
+                  setSearch("");
+                  setIsSearchExpanded(false);
+                }}
+                aria-label="Close search"
+              >
+                <span className="text-muted-foreground text-xs">×</span>
+              </Button>
             </div>
           )}
           <div className="hidden md:flex items-center gap-2 text-muted-foreground"><Filter className="h-4 w-4" /> Filters</div>

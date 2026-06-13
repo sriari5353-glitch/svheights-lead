@@ -145,6 +145,23 @@ serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (action === "update_email") {
+      const user_id = String(payload.user_id || "").trim();
+      const email = String(payload.email || "").trim();
+      if (!user_id || !email) return json({ error: "user_id and email required" }, { status: 400 });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Invalid email format" }, { status: 400 });
+
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(user_id, { email, email_confirm: true });
+      if (authErr) return json({ error: authErr.message }, { status: 500 });
+
+      const { error: profErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ email })
+        .eq("id", user_id);
+      if (profErr) return json({ error: profErr.message }, { status: 500 });
+      return json({ ok: true });
+    }
+
     if (action === "deactivate" || action === "activate") {
       const user_id = String(payload.user_id || "").trim();
       if (!user_id) return json({ error: "user_id required" }, { status: 400 });

@@ -22,7 +22,7 @@ interface Profile {
 }
 
 const AdminPage: React.FC = () => {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, loading, rolesLoaded } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -165,7 +165,7 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-6">Loading…</div>;
+  if (loading || !rolesLoaded) return <div className="p-6">Loading…</div>;
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (

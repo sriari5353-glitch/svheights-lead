@@ -290,9 +290,12 @@ const RoleSwitch: React.FC = () => {
                 variant={isAdminView ? "default" : "outline"}
                 size="sm"
                 className="w-full justify-start"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const target = isAdminView ? "/" : "/admin";
                   setShowMenu(false);
-                  setTimeout(() => navigate(isAdminView ? "/" : "/admin"), 0);
+                  navigate(target);
                 }}
               >
                 {isAdminView ? "Switch to User View" : "Switch to Admin View"}

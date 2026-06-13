@@ -31,6 +31,8 @@ export default function Notes() {
   const [isEditing, setIsEditing] = useState(false);
   const [newNoteDialog, setNewNoteDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);

@@ -761,6 +761,25 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
     }
   }, [selectedLeadId]);
 
+  // Expandable search: auto-focus when expanded, collapse on outside click
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isSearchExpanded &&
+        search === "" &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchExpanded, search]);
+
   const filtered = useMemo(() => {
     return leads.filter((l) => {
       const q = search.toLowerCase();

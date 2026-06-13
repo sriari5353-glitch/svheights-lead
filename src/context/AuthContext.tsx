@@ -30,12 +30,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
 
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        setRolesLoaded(false);
         setTimeout(async () => {
           const { data } = await supabase
             .from("user_roles")
@@ -55,9 +57,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setSession(null);
             setIsAdmin(false);
           }
+          setRolesLoaded(true);
         }, 0);
       } else {
         setIsAdmin(false);
+        setRolesLoaded(true);
       }
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
         setLoading(false);
@@ -70,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
+      if (!data.session?.user) setRolesLoaded(true);
       setLoading(false);
     });
 
@@ -89,8 +94,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const value = useMemo(
-    () => ({ user, session, loading, isAdmin, signOut }),
-    [user, session, loading, isAdmin]
+    () => ({ user, session, loading, isAdmin, rolesLoaded, signOut }),
+    [user, session, loading, isAdmin, rolesLoaded]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

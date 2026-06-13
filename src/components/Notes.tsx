@@ -45,6 +45,26 @@ export default function Notes() {
   // Auto-save timeout
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  // Expandable search: auto-focus when expanded, collapse on outside click
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isSearchExpanded &&
+        searchTerm === "" &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchExpanded, searchTerm]);
+
   // Fetch all notes
   const fetchNotes = useCallback(async () => {
     if (!user) return;

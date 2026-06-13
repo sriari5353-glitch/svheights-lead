@@ -31,6 +31,8 @@ export default function Notes() {
   const [isEditing, setIsEditing] = useState(false);
   const [newNoteDialog, setNewNoteDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -42,6 +44,26 @@ export default function Notes() {
 
   // Auto-save timeout
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Expandable search: auto-focus when expanded, collapse on outside click
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isSearchExpanded &&
+        searchTerm === "" &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchExpanded, searchTerm]);
 
   // Fetch all notes
   const fetchNotes = useCallback(async () => {
@@ -307,14 +329,49 @@ export default function Notes() {
         {/* Notes List */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              <Input
-                placeholder="Search notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
-              />
+            <div className="flex items-center gap-2" ref={searchContainerRef}>
+              {!isSearchExpanded ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 p-0 shrink-0"
+                  onClick={() => setIsSearchExpanded(true)}
+                  aria-label="Search notes"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 flex-1 animate-in fade-in zoom-in-95 duration-200">
+                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Search notes..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 min-w-0"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setSearchTerm("");
+                        setIsSearchExpanded(false);
+                      }
+                    }}
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => {
+                        setSearchTerm("");
+                        searchInputRef.current?.focus();
+                      }}
+                      aria-label="Clear search"
+                    >
+                      <span className="text-muted-foreground text-xs">✕</span>
+                    </Button>
+                  )}
+                </div>
+              )}
               <Button
                 variant={isSelectionMode ? "destructive" : "outline"}
                 size="sm"

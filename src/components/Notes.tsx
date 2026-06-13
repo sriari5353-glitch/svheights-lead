@@ -329,14 +329,49 @@ export default function Notes() {
         {/* Notes List */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              <Input
-                placeholder="Search notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
-              />
+            <div className="flex items-center gap-2" ref={searchContainerRef}>
+              {!isSearchExpanded ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 p-0 shrink-0"
+                  onClick={() => setIsSearchExpanded(true)}
+                  aria-label="Search notes"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 flex-1 animate-in fade-in zoom-in-95 duration-200">
+                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Search notes..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 min-w-0"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setSearchTerm("");
+                        setIsSearchExpanded(false);
+                      }
+                    }}
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => {
+                        setSearchTerm("");
+                        searchInputRef.current?.focus();
+                      }}
+                      aria-label="Clear search"
+                    >
+                      <span className="text-muted-foreground text-xs">✕</span>
+                    </Button>
+                  )}
+                </div>
+              )}
               <Button
                 variant={isSelectionMode ? "destructive" : "outline"}
                 size="sm"

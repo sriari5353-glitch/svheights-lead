@@ -7,6 +7,7 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  rolesLoaded: boolean;
   signOut: () => Promise<void>;
 }
 

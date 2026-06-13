@@ -22,7 +22,7 @@ interface Profile {
 }
 
 const AdminPage: React.FC = () => {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, loading, rolesLoaded } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 

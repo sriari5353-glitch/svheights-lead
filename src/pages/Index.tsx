@@ -717,6 +717,9 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
   const [ratingFilter, setRatingFilter] = useState<string | undefined>(undefined);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 

@@ -40,6 +40,9 @@ const AdminPage: React.FC = () => {
   const [editingBrand, setEditingBrand] = useState<string | null>(null);
   const [editBrandValue, setEditBrandValue] = useState("");
 
+  const [editingEmail, setEditingEmail] = useState<string | null>(null);
+  const [editEmailValue, setEditEmailValue] = useState("");
+
   useEffect(() => {
     document.title = "Admin | LeadMate";
   }, []);
@@ -165,6 +168,30 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const updateEmail = async (userId: string) => {
+    const val = editEmailValue.trim();
+    if (!val) {
+      toast("Enter an email");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      toast("Invalid email format");
+      return;
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-users", {
+        body: { action: "update_email", user_id: userId, email: val },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast("Email updated");
+      setEditingEmail(null);
+      loadUsers();
+    } catch (e: any) {
+      toast(e.message || "Failed to update email");
+    }
+  };
+
   if (loading || !rolesLoaded) return <div className="p-6">Loading…</div>;
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -277,7 +304,33 @@ const AdminPage: React.FC = () => {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>{u.email}</TableCell>
+                    <TableCell>
+                      {editingEmail === u.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="email"
+                            value={editEmailValue}
+                            onChange={(e) => setEditEmailValue(e.target.value)}
+                            className="h-7 w-52 text-sm"
+                            onKeyDown={(e) => e.key === "Enter" && updateEmail(u.id)}
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => updateEmail(u.id)}>✓</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingEmail(null)}>✕</Button>
+                        </div>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          {u.email}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => { setEditingEmail(u.id); setEditEmailValue(u.email || ""); }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{u.is_active ? "Yes" : "No"}</TableCell>
                     <TableCell>{new Date(u.created_at).toLocaleString()}</TableCell>
                     <TableCell className="text-right space-x-2">

@@ -148,7 +148,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         notes: '',
         feedback: '',
       });
-      setSelectedDate(undefined);
+      const today = new Date();
+      setSelectedDate(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
     }
     
     onSuccess?.();
@@ -180,7 +181,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       </div>
 
       <div>
-        <Label>Lead Date (Optional)</Label>
+        <Label>Lead Date</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button

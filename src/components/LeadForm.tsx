@@ -62,6 +62,11 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         return new Date(dateStr + 'T00:00:00');
       }
     }
+    if (!isEditing) {
+      // Default to today's date for new leads
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    }
     return undefined;
   });
 

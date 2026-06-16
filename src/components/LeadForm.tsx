@@ -62,6 +62,11 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         return new Date(dateStr + 'T00:00:00');
       }
     }
+    if (!isEditing) {
+      // Default to today's date for new leads
+      const today = new Date();
+      return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    }
     return undefined;
   });
 
@@ -143,7 +148,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({
         notes: '',
         feedback: '',
       });
-      setSelectedDate(undefined);
+      const today = new Date();
+      setSelectedDate(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
     }
     
     onSuccess?.();
@@ -175,7 +181,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       </div>
 
       <div>
-        <Label>Lead Date (Optional)</Label>
+        <Label>Lead Date</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button

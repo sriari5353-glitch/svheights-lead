@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://xdbpsekyyifjrvarqwqj.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "svheights-lead",
+      "version": "0.1.0",
+      "title": "svheights-lead"
+    },
+    "tools": [
+      {
+        "name": "list_leads",
+        "title": "List leads",
+        "description": "List the signed-in user's CRM leads, optionally filtered by status or a name/phone search term.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filter by status, e.g. 'New Lead', 'Prospect', 'Negotiation', 'Hot Lead', 'Closed', 'Lost'.",
+              "type": "string"
+            },
+            "search": {
+              "description": "Match part of a lead name or phone number.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Max leads to return (default 25).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_lead",
+        "title": "Create lead",
+        "description": "Create a new CRM lead for the signed-in user. Phone numbers must be unique within the account.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Lead's full name."
+            },
+            "phone": {
+              "type": "string",
+              "minLength": 6,
+              "description": "Phone number; 10-digit numbers are treated as Indian (+91)."
+            },
+            "source": {
+              "description": "Lead source, e.g. 'Walk-in', 'Referral', 'Social Media', 'Other'.",
+              "type": "string"
+            },
+            "source_details": {
+              "description": "Extra detail about where the lead came from.",
+              "type": "string"
+            },
+            "status": {
+              "description": "Initial status (default 'New Lead').",
+              "type": "string"
+            },
+            "notes": {
+              "description": "Initial notes for the lead.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "phone"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_lead",
+        "title": "Update lead",
+        "description": "Update status, feedback, rating, or notes on one of the signed-in user's leads.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "The lead id to update."
+            },
+            "status": {
+              "description": "New status, e.g. 'Prospect', 'Hot Lead', 'Closed', 'Lost'.",
+              "type": "string"
+            },
+            "feedback": {
+              "description": "Feedback value, e.g. 'Prospect', 'Follow-up', 'Visited', 'Rejected'.",
+              "type": "string"
+            },
+            "rating": {
+              "description": "Star rating 0-5.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "notes": {
+              "description": "Replaces the notes field for this lead.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_reminders",
+        "title": "List reminders",
+        "description": "List the signed-in user's follow-up reminders, newest scheduled first, with the linked lead.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "upcoming_only": {
+              "description": "Only return reminders scheduled in the future.",
+              "type": "boolean"
+            },
+            "limit": {
+              "description": "Max reminders to return (default 25).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_reminder",
+        "title": "Create reminder",
+        "description": "Schedule a follow-up reminder for one of the signed-in user's leads.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "The lead the reminder belongs to."
+            },
+            "datetime": {
+              "type": "string",
+              "description": "When the reminder is due, as an ISO 8601 timestamp."
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Reminder text."
+            }
+          },
+          "required": [
+            "lead_id",
+            "datetime",
+            "message"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

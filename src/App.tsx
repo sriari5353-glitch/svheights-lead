@@ -10,7 +10,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Admin from "./pages/Admin";
+import OAuthConsent from "./pages/OAuthConsent";
 import AppHeader from "./components/AppHeader";
+
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/forgot" element={<ForgotPassword />} />
             <Route path="/auth/reset" element={<ResetPassword />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+
             <Route path="/admin" element={<ProtectedRoute element={<Admin />} />} />
             <Route path="/" element={<ProtectedRoute element={<Index />} />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

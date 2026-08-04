@@ -131,8 +131,11 @@ const AuthPage: React.FC = () => {
         return;
       }
       
-      // Force page reload for a clean state
-      window.location.href = "/";
+      // Force page reload for a clean state, returning to `next` when it is a safe same-origin path
+      const nextParam = new URLSearchParams(window.location.search).get("next");
+      const safeNext = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+      window.location.href = safeNext;
+
       
     } catch (err: any) {
       toast(err.message || "Login failed");

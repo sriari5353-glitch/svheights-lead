@@ -42,7 +42,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     phone: initialData?.phone || '',
-    source: initialData?.source || 'Walk-in' as LeadSource,
+    source: initialData?.source || 'Social Media' as LeadSource,
     sourceDetails: initialData?.sourceDetails || '',
     
     notes: initialData?.notes || '',
@@ -143,7 +143,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       setFormData({
         name: '',
         phone: '',
-        source: 'Walk-in',
+        source: 'Social Media',
         sourceDetails: '',
         notes: '',
         feedback: '',
@@ -217,9 +217,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="Social Media">Social Media</SelectItem>
             <SelectItem value="Walk-in">Walk-in</SelectItem>
             <SelectItem value="Referral">Referral</SelectItem>
-            <SelectItem value="Social Media">Social Media</SelectItem>
             <SelectItem value="Other">Other</SelectItem>
           </SelectContent>
         </Select>

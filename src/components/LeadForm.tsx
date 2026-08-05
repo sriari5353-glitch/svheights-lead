@@ -217,9 +217,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="Social Media">Social Media</SelectItem>
             <SelectItem value="Walk-in">Walk-in</SelectItem>
             <SelectItem value="Referral">Referral</SelectItem>
-            <SelectItem value="Social Media">Social Media</SelectItem>
             <SelectItem value="Other">Other</SelectItem>
           </SelectContent>
         </Select>

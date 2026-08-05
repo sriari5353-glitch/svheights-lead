@@ -42,7 +42,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     phone: initialData?.phone || '',
-    source: initialData?.source || 'Walk-in' as LeadSource,
+    source: initialData?.source || 'Social Media' as LeadSource,
     sourceDetails: initialData?.sourceDetails || '',
     
     notes: initialData?.notes || '',

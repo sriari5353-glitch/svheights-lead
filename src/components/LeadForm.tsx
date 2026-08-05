@@ -143,7 +143,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       setFormData({
         name: '',
         phone: '',
-        source: 'Walk-in',
+        source: 'Social Media',
         sourceDetails: '',
         notes: '',
         feedback: '',

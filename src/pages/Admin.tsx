@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/components/ui/sonner";
-import AdminUserSwitcher from "@/components/AdminUserSwitcher";
 
 interface Profile {
   id: string;
@@ -232,8 +231,6 @@ const AdminPage: React.FC = () => {
           </Dialog>
         </div>
       </div>
-
-      <AdminUserSwitcher users={users} />
 
       <Card>
         <CardHeader>

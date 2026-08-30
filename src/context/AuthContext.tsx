@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { cacheSession, setHomeAdmin, clearAllCachedSessions } from "@/lib/userSwitch";
-
 
 interface AuthContextValue {
   user: User | null;
@@ -39,17 +37,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        cacheSession(s.user.id, s.access_token, s.refresh_token);
         setRolesLoaded(false);
         setTimeout(async () => {
           const { data } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", s.user.id);
-          const admin = Boolean(data?.some((r) => r.role === "admin"));
-          setIsAdmin(admin);
-          if (admin) setHomeAdmin(s.user.id);
-
+          setIsAdmin(Boolean(data?.some((r) => r.role === "admin")));
 
           const { data: profile } = await supabase
             .from("profiles")
@@ -91,9 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      clearAllCachedSessions();
       cleanupAuthState();
-
       try { await supabase.auth.signOut({ scope: "global" as any }); } catch (_) {}
       window.location.href = "/auth";
     } catch (_) {

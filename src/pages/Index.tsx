@@ -18,6 +18,7 @@ import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOu
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
@@ -717,6 +718,7 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
   const [ratingFilter, setRatingFilter] = useState<string | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
@@ -805,9 +807,22 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
           default:return true;
         }
       })();
-      return qMatch && srcMatch && fbMatch && ratingMatch;
+
+      const dateMatch = !dateRange?.from || (() => {
+        const raw = l.leadDate || l.createdAt;
+        if (!raw) return false;
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return false;
+        const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const from = new Date(dateRange.from!.getFullYear(), dateRange.from!.getMonth(), dateRange.from!.getDate()).getTime();
+        const toBase = dateRange.to ?? dateRange.from!;
+        const to = new Date(toBase.getFullYear(), toBase.getMonth(), toBase.getDate()).getTime();
+        return day >= from && day <= to;
+      })();
+
+      return qMatch && srcMatch && fbMatch && ratingMatch && dateMatch;
     });
-  }, [leads, search, src, activeFeedbacks, ratingFilter]);
+  }, [leads, search, src, activeFeedbacks, ratingFilter, dateRange]);
 
   const allSelected = filtered.length > 0 && filtered.every((l) => selection[l.id]);
   const toggleAll = (v: boolean) => {
@@ -964,6 +979,43 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                     <SelectItem value="4+">⭐⭐⭐⭐+ 4+ Stars</SelectItem>
                   </SelectContent>
                 </Select>
+                <div className="flex items-center gap-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">
+                          {dateRange?.from
+                            ? dateRange.to && dateRange.to.getTime() !== dateRange.from.getTime()
+                              ? `${format(dateRange.from, "LLL d, yyyy")} – ${format(dateRange.to, "LLL d, yyyy")}`
+                              : format(dateRange.from, "LLL d, yyyy")
+                            : "Date Range"}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={1}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {dateRange?.from && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 shrink-0"
+                      onClick={() => setDateRange(undefined)}
+                      aria-label="Clear date filter"
+                    >
+                      <span className="text-muted-foreground text-xs">✕</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             </PopoverContent>
           </Popover>

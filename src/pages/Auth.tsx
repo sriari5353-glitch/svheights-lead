@@ -131,10 +131,23 @@ const AuthPage: React.FC = () => {
         return;
       }
       
-      // Force page reload for a clean state, returning to `next` when it is a safe same-origin path
+      // Admins land on the admin view by default; otherwise honor a safe `next` path
       const nextParam = new URLSearchParams(window.location.search).get("next");
-      const safeNext = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
-      window.location.href = safeNext;
+      const safeNext = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+
+      let destination = safeNext || "/";
+      if (!safeNext) {
+        const { data: sess } = await supabase.auth.getSession();
+        const uid = sess.session?.user?.id;
+        if (uid) {
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", uid);
+          if (roles?.some((r) => r.role === "admin")) destination = "/admin";
+        }
+      }
+      window.location.href = destination;
 
       
     } catch (err: any) {

@@ -11,7 +11,7 @@ import { PhoneInput } from '@/components/PhoneInput';
 import { useCRM } from '@/context/CRMContext';
 import type { LeadSource, LeadStatus, Feedback } from '@/types/crm';
 import { isValidIndianMobile } from '@/utils/phoneUtils';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -71,6 +71,12 @@ export const LeadForm: React.FC<LeadFormProps> = ({
   });
 
   const [phoneError, setPhoneError] = useState('');
+
+  // Abroad mode: enabled when editing a lead with a non-+91 international number
+  const [isAbroad, setIsAbroad] = useState<boolean>(() => {
+    const p = initialData?.phone?.trim() || '';
+    return p.startsWith('+') && !p.startsWith('+91');
+  });
 
   const handlePhoneChange = (phone: string) => {
     setFormData(prev => ({ ...prev, phone }));

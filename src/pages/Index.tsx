@@ -807,9 +807,22 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
           default:return true;
         }
       })();
-      return qMatch && srcMatch && fbMatch && ratingMatch;
+
+      const dateMatch = !dateRange?.from || (() => {
+        const raw = l.leadDate || l.createdAt;
+        if (!raw) return false;
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return false;
+        const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const from = new Date(dateRange.from!.getFullYear(), dateRange.from!.getMonth(), dateRange.from!.getDate()).getTime();
+        const toBase = dateRange.to ?? dateRange.from!;
+        const to = new Date(toBase.getFullYear(), toBase.getMonth(), toBase.getDate()).getTime();
+        return day >= from && day <= to;
+      })();
+
+      return qMatch && srcMatch && fbMatch && ratingMatch && dateMatch;
     });
-  }, [leads, search, src, activeFeedbacks, ratingFilter]);
+  }, [leads, search, src, activeFeedbacks, ratingFilter, dateRange]);
 
   const allSelected = filtered.length > 0 && filtered.every((l) => selection[l.id]);
   const toggleAll = (v: boolean) => {

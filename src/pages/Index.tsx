@@ -783,45 +783,53 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   }, [isSearchExpanded, search]);
 
   const filtered = useMemo(() => {
-    return leads.filter((l) => {
-      const q = search.toLowerCase();
-      const qMatch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q);
-      const srcMatch = !src || l.source === src;
+    return leads
+      .filter((l) => {
+        const q = search.toLowerCase();
+        const qMatch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q);
+        const srcMatch = !src || l.source === src;
 
-      // Multi-select feedback filter
-      const fbMatch = activeFeedbacks.length === 0 ||
-      activeFeedbacks.includes("ALL") ||
-      activeFeedbacks.some((filter) => filter === l.feedback);
+        // Multi-select feedback filter
+        const fbMatch = activeFeedbacks.length === 0 ||
+        activeFeedbacks.includes("ALL") ||
+        activeFeedbacks.some((filter) => filter === l.feedback);
 
-      const ratingMatch = !ratingFilter || (() => {
-        const rating = l.rating || 0;
-        switch (ratingFilter) {
-          case "1":return rating === 1;
-          case "2":return rating === 2;
-          case "3":return rating === 3;
-          case "4":return rating === 4;
-          case "5":return rating === 5;
-          case "3+":return rating >= 3;
-          case "4+":return rating >= 4;
-          case "unrated":return rating === 0;
-          default:return true;
-        }
-      })();
+        const ratingMatch = !ratingFilter || (() => {
+          const rating = l.rating || 0;
+          switch (ratingFilter) {
+            case "1":return rating === 1;
+            case "2":return rating === 2;
+            case "3":return rating === 3;
+            case "4":return rating === 4;
+            case "5":return rating === 5;
+            case "3+":return rating >= 3;
+            case "4+":return rating >= 4;
+            case "unrated":return rating === 0;
+            default:return true;
+          }
+        })();
 
-      const dateMatch = !dateRange?.from || (() => {
-        const raw = l.leadDate || l.createdAt;
-        if (!raw) return false;
-        const d = new Date(raw);
-        if (isNaN(d.getTime())) return false;
-        const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-        const from = new Date(dateRange.from!.getFullYear(), dateRange.from!.getMonth(), dateRange.from!.getDate()).getTime();
-        const toBase = dateRange.to ?? dateRange.from!;
-        const to = new Date(toBase.getFullYear(), toBase.getMonth(), toBase.getDate()).getTime();
-        return day >= from && day <= to;
-      })();
+        const dateMatch = !dateRange?.from || (() => {
+          const raw = l.leadDate || l.createdAt;
+          if (!raw) return false;
+          const d = new Date(raw);
+          if (isNaN(d.getTime())) return false;
+          const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+          const from = new Date(dateRange.from!.getFullYear(), dateRange.from!.getMonth(), dateRange.from!.getDate()).getTime();
+          const toBase = dateRange.to ?? dateRange.from!;
+          const to = new Date(toBase.getFullYear(), toBase.getMonth(), toBase.getDate()).getTime();
+          return day >= from && day <= to;
+        })();
 
-      return qMatch && srcMatch && fbMatch && ratingMatch && dateMatch;
-    });
+        return qMatch && srcMatch && fbMatch && ratingMatch && dateMatch;
+      })
+      .sort((a, b) => {
+        const aMissing = !a.leadDate;
+        const bMissing = !b.leadDate;
+        if (aMissing && !bMissing) return -1;
+        if (!aMissing && bMissing) return 1;
+        return 0;
+      });
   }, [leads, search, src, activeFeedbacks, ratingFilter, dateRange]);
 
   const allSelected = filtered.length > 0 && filtered.every((l) => selection[l.id]);
@@ -1086,7 +1094,7 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                      <TableRow
                     key={l.id}
                     id={`lead-${l.id}`}
-                    className={selectedLeadId === l.id ? "bg-primary/10" : ""}>
+                    className={!l.leadDate ? "bg-warning/15 border-l-4 border-warning" : selectedLeadId === l.id ? "bg-primary/10" : ""}>
 
                        <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
                          <TableCell className="font-medium">
@@ -1099,6 +1107,9 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                           l.feedback === "Rejected" ? "bg-destructive text-destructive-foreground" :
                           ""}`
                           }>{l.name}</div>
+                               {!l.leadDate && (
+                                 <Badge variant="warning" className="mt-1">No Lead Date</Badge>
+                               )}
                                <div className={`text-sm rounded px-2 py-1 mt-1 ${
                           l.feedback === "Prospect" ? "bg-accent text-accent-foreground" :
                           l.feedback === "Follow-up" ? "bg-warning text-warning-foreground" :

@@ -11,7 +11,7 @@ import { PhoneInput } from '@/components/PhoneInput';
 import { useCRM } from '@/context/CRMContext';
 import type { LeadSource, LeadStatus, Feedback } from '@/types/crm';
 import { isValidIndianMobile } from '@/utils/phoneUtils';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -72,6 +72,12 @@ export const LeadForm: React.FC<LeadFormProps> = ({
 
   const [phoneError, setPhoneError] = useState('');
 
+  // Abroad mode: enabled when editing a lead with a non-+91 international number
+  const [isAbroad, setIsAbroad] = useState<boolean>(() => {
+    const p = initialData?.phone?.trim() || '';
+    return p.startsWith('+') && !p.startsWith('+91');
+  });
+
   const handlePhoneChange = (phone: string) => {
     setFormData(prev => ({ ...prev, phone }));
     
@@ -105,7 +111,19 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       return;
     }
     
-    if (!isValidIndianMobile(formData.phone)) {
+    let phoneToSave = formData.phone.trim();
+    if (isAbroad) {
+      const digits = phoneToSave.replace(/\D/g, '');
+      if (digits.length < 6) {
+        setPhoneError('Please enter a valid abroad phone number');
+        return;
+      }
+      // Normalize: strip spaces/dashes, ensure leading '+' so CRMContext.addIndiaCode leaves it untouched
+      phoneToSave = phoneToSave.replace(/[\s\-()]/g, '');
+      if (!phoneToSave.startsWith('+')) {
+        phoneToSave = `+${phoneToSave.replace(/^0+/, '')}`;
+      }
+    } else if (!isValidIndianMobile(formData.phone)) {
       setPhoneError('Please enter a valid Indian mobile number');
       return;
     }
@@ -122,6 +140,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
 
     const leadData = {
       ...formData,
+      phone: phoneToSave,
       status: 'New Lead' as LeadStatus, // Default status since we removed the UI
       leadDate: leadDateString,
     };
@@ -150,6 +169,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       });
       const today = new Date();
       setSelectedDate(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+      setIsAbroad(false);
     }
     
     onSuccess?.();
@@ -169,12 +189,40 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       </div>
 
       <div>
-        <Label htmlFor="phone">Phone Number *</Label>
-        <PhoneInput
-          value={formData.phone}
-          onChange={handlePhoneChange}
-          placeholder="Enter phone number"
-        />
+        <div className="flex items-center justify-between">
+          <Label htmlFor="phone">{isAbroad ? 'Abroad Phone Number *' : 'Phone Number *'}</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => {
+              setIsAbroad(prev => !prev);
+              setPhoneError('');
+            }}
+          >
+            {isAbroad ? 'Indian Number' : 'Abroad Number'}
+            <ChevronDown className="ml-1 h-3 w-3" />
+          </Button>
+        </div>
+        {isAbroad ? (
+          <Input
+            id="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, phone: e.target.value }));
+              if (phoneError) setPhoneError('');
+            }}
+            placeholder="e.g. +1 415 555 2671"
+          />
+        ) : (
+          <PhoneInput
+            value={formData.phone}
+            onChange={handlePhoneChange}
+            placeholder="Enter phone number"
+          />
+        )}
         {phoneError && (
           <p className="text-sm text-red-600 mt-1">{phoneError}</p>
         )}

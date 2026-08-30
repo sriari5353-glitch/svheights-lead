@@ -18,6 +18,7 @@ import { CalendarDays, Filter, MessageSquare, Plus, Search, Trash2, Users, LogOu
 import { useAuth } from "@/context/AuthContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import DoubleConfirmDelete from "@/components/DoubleConfirmDelete";
 import Diary from "@/components/Diary";
@@ -717,6 +718,7 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
   const [src, setSrc] = useState<LeadSource | undefined>(undefined);
   const [fb, setFb] = useState<Feedback | undefined>(undefined);
   const [ratingFilter, setRatingFilter] = useState<string | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);

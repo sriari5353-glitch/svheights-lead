@@ -111,7 +111,19 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       return;
     }
     
-    if (!isValidIndianMobile(formData.phone)) {
+    let phoneToSave = formData.phone.trim();
+    if (isAbroad) {
+      const digits = phoneToSave.replace(/\D/g, '');
+      if (digits.length < 6) {
+        setPhoneError('Please enter a valid abroad phone number');
+        return;
+      }
+      // Normalize: strip spaces/dashes, ensure leading '+' so CRMContext.addIndiaCode leaves it untouched
+      phoneToSave = phoneToSave.replace(/[\s\-()]/g, '');
+      if (!phoneToSave.startsWith('+')) {
+        phoneToSave = `+${phoneToSave.replace(/^0+/, '')}`;
+      }
+    } else if (!isValidIndianMobile(formData.phone)) {
       setPhoneError('Please enter a valid Indian mobile number');
       return;
     }
@@ -128,6 +140,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
 
     const leadData = {
       ...formData,
+      phone: phoneToSave,
       status: 'New Lead' as LeadStatus, // Default status since we removed the UI
       leadDate: leadDateString,
     };

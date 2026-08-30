@@ -169,6 +169,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       });
       const today = new Date();
       setSelectedDate(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+      setIsAbroad(false);
     }
     
     onSuccess?.();
@@ -188,12 +189,40 @@ export const LeadForm: React.FC<LeadFormProps> = ({
       </div>
 
       <div>
-        <Label htmlFor="phone">Phone Number *</Label>
-        <PhoneInput
-          value={formData.phone}
-          onChange={handlePhoneChange}
-          placeholder="Enter phone number"
-        />
+        <div className="flex items-center justify-between">
+          <Label htmlFor="phone">{isAbroad ? 'Abroad Phone Number *' : 'Phone Number *'}</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => {
+              setIsAbroad(prev => !prev);
+              setPhoneError('');
+            }}
+          >
+            {isAbroad ? 'Indian Number' : 'Abroad Number'}
+            <ChevronDown className="ml-1 h-3 w-3" />
+          </Button>
+        </div>
+        {isAbroad ? (
+          <Input
+            id="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, phone: e.target.value }));
+              if (phoneError) setPhoneError('');
+            }}
+            placeholder="e.g. +1 415 555 2671"
+          />
+        ) : (
+          <PhoneInput
+            value={formData.phone}
+            onChange={handlePhoneChange}
+            placeholder="Enter phone number"
+          />
+        )}
         {phoneError && (
           <p className="text-sm text-red-600 mt-1">{phoneError}</p>
         )}

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/context/AuthContext";
-import { getCachedSessions, switchToUser } from "@/lib/userSwitch";
+import { getCachedSessions, switchToUser, cacheUserList, setHomeAdmin } from "@/lib/userSwitch";
 
 interface SwitchableUser {
   id: string;
@@ -18,11 +18,16 @@ const initial = (u: SwitchableUser) =>
   (u.username || u.full_name || u.email || "U").charAt(0).toUpperCase();
 
 const AdminUserSwitcher: React.FC<{ users: SwitchableUser[] }> = ({ users }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [switching, setSwitching] = useState<string | null>(null);
   const cached = getCachedSessions();
 
   const active = users.filter((u) => u.is_active !== false);
+
+  useEffect(() => {
+    if (isAdmin && user) setHomeAdmin(user.id);
+    if (active.length) cacheUserList(active);
+  }, [isAdmin, user, users]);
 
   const handleSwitch = async (target: SwitchableUser) => {
     if (target.id === user?.id) return;
@@ -33,6 +38,7 @@ const AdminUserSwitcher: React.FC<{ users: SwitchableUser[] }> = ({ users }) => 
       setSwitching(null);
     }
   };
+
 
   return (
     <Card>

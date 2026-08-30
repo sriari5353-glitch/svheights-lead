@@ -39,13 +39,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        cacheSession(s.user.id, s.access_token, s.refresh_token);
         setRolesLoaded(false);
         setTimeout(async () => {
           const { data } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", s.user.id);
-          setIsAdmin(Boolean(data?.some((r) => r.role === "admin")));
+          const admin = Boolean(data?.some((r) => r.role === "admin"));
+          setIsAdmin(admin);
+          if (admin) setHomeAdmin(s.user.id);
+
 
           const { data: profile } = await supabase
             .from("profiles")

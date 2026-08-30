@@ -922,39 +922,51 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
               </Button>
             </div>
           )}
-          <div className="hidden md:flex items-center gap-2 text-muted-foreground"><Filter className="h-4 w-4" /> Filters</div>
-          <Select value={src} onValueChange={(v) => setSrc(v === "ALL" ? undefined : v as LeadSource)}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Source" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All</SelectItem>
-              {SOURCE_OPTIONS.map((s) =>
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          <Select value={fb} onValueChange={(v) => setFb(v === "ALL" ? undefined : v as Feedback)}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Feedback" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All</SelectItem>
-              {FEEDBACK_OPTIONS.map((s) =>
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v === "ALL" ? undefined : v)}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Rating" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Ratings</SelectItem>
-              <SelectItem value="unrated">Unrated (0)</SelectItem>
-              <SelectItem value="1">⭐ 1 Star</SelectItem>
-              <SelectItem value="2">⭐⭐ 2 Stars</SelectItem>
-              <SelectItem value="3">⭐⭐⭐ 3 Stars</SelectItem>
-              <SelectItem value="4">⭐⭐⭐⭐ 4 Stars</SelectItem>
-              <SelectItem value="5">⭐⭐⭐⭐⭐ 5 Stars</SelectItem>
-              <SelectItem value="3+">⭐⭐⭐+ 3+ Stars</SelectItem>
-              <SelectItem value="4+">⭐⭐⭐⭐+ 4+ Stars</SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Filter className="h-4 w-4" />
+                Filters
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4" align="start">
+              <div className="flex flex-col gap-3 min-w-[200px]">
+                <Select value={src} onValueChange={(v) => setSrc(v === "ALL" ? undefined : v as LeadSource)}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Source" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All</SelectItem>
+                    {SOURCE_OPTIONS.map((s) =>
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <Select value={fb} onValueChange={(v) => setFb(v === "ALL" ? undefined : v as Feedback)}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Feedback" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All</SelectItem>
+                    {FEEDBACK_OPTIONS.map((s) =>
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v === "ALL" ? undefined : v)}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Rating" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Ratings</SelectItem>
+                    <SelectItem value="unrated">Unrated (0)</SelectItem>
+                    <SelectItem value="1">⭐ 1 Star</SelectItem>
+                    <SelectItem value="2">⭐⭐ 2 Stars</SelectItem>
+                    <SelectItem value="3">⭐⭐⭐ 3 Stars</SelectItem>
+                    <SelectItem value="4">⭐⭐⭐⭐ 4 Stars</SelectItem>
+                    <SelectItem value="5">⭐⭐⭐⭐⭐ 5 Stars</SelectItem>
+                    <SelectItem value="3+">⭐⭐⭐+ 3+ Stars</SelectItem>
+                    <SelectItem value="4+">⭐⭐⭐⭐+ 4+ Stars</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="flex items-center gap-2">

@@ -91,7 +91,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      clearAllCachedSessions();
       cleanupAuthState();
+
       try { await supabase.auth.signOut({ scope: "global" as any }); } catch (_) {}
       window.location.href = "/auth";
     } catch (_) {

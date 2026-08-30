@@ -1094,7 +1094,7 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                      <TableRow
                     key={l.id}
                     id={`lead-${l.id}`}
-                    className={selectedLeadId === l.id ? "bg-primary/10" : ""}>
+                    className={!l.leadDate ? "bg-warning/15 border-l-4 border-warning" : selectedLeadId === l.id ? "bg-primary/10" : ""}>
 
                        <TableCell><Checkbox checked={!!selection[l.id]} onCheckedChange={(v) => setSelection((s) => ({ ...s, [l.id]: Boolean(v) }))} /></TableCell>
                          <TableCell className="font-medium">
@@ -1107,6 +1107,9 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                           l.feedback === "Rejected" ? "bg-destructive text-destructive-foreground" :
                           ""}`
                           }>{l.name}</div>
+                               {!l.leadDate && (
+                                 <Badge variant="warning" className="mt-1">No Lead Date</Badge>
+                               )}
                                <div className={`text-sm rounded px-2 py-1 mt-1 ${
                           l.feedback === "Prospect" ? "bg-accent text-accent-foreground" :
                           l.feedback === "Follow-up" ? "bg-warning text-warning-foreground" :

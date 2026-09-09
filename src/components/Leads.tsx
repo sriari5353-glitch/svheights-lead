@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Phone, Edit, Trash2, Calendar, MessageSquare } from "lucide-react";
 import { LeadForm } from "./LeadForm";
 import CalendarNotes from "./CalendarNotes";
-import StarRating from "./ui/star-rating";
+import LeadCategorySelect from "./LeadCategorySelect";
 import { Lead } from "@/types/crm";
 
 const Leads = () => {
@@ -78,9 +78,9 @@ const Leads = () => {
                     </div>
                   )}
                 </div>
-                <StarRating
+                <LeadCategorySelect
                   rating={lead.rating || 0}
-                  onRatingChange={(rating) => handleRatingChange(lead.id, rating)}
+                  onCategoryChange={(rating) => handleRatingChange(lead.id, rating)}
                   size="sm"
                 />
               </div>

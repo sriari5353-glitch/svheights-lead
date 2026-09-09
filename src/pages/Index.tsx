@@ -26,7 +26,8 @@ import Notes from "@/components/Notes";
 import RemindersSection from "@/components/RemindersSection";
 import { LeadForm } from "@/components/LeadForm";
 import DataUpload, { DownloadDataButton } from "@/components/DataUpload";
-import StarRating from "@/components/ui/star-rating";
+import LeadCategorySelect from "@/components/LeadCategorySelect";
+import { ratingToCategory, categoryBadgeClasses } from "@/utils/ratingUtils";
 import { supabase } from "@/integrations/supabase/client";
 
 // Options
@@ -660,13 +661,13 @@ function NotesCalendarDialog({
             </Select>
             
             <div className="flex items-center">
-              <StarRating
+              <LeadCategorySelect
                 rating={leads.find((l) => l.id === leadId)?.rating || 0}
-                onRatingChange={(rating) => {
+                onCategoryChange={(rating, category) => {
                   const lead = leads.find((l) => l.id === leadId);
                   if (lead) {
                     updateLead({ ...lead, rating });
-                    toast({ title: "Rating updated", description: `Rated ${rating}/5 stars` });
+                    toast({ title: "Category updated", description: `Marked as ${category}` });
                   }
                 }}
                 size="sm" />
@@ -795,16 +796,12 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
         activeFeedbacks.some((filter) => filter === l.feedback);
 
         const ratingMatch = !ratingFilter || (() => {
-          const rating = l.rating || 0;
+          const category = ratingToCategory(l.rating);
           switch (ratingFilter) {
-            case "1":return rating === 1;
-            case "2":return rating === 2;
-            case "3":return rating === 3;
-            case "4":return rating === 4;
-            case "5":return rating === 5;
-            case "3+":return rating >= 3;
-            case "4+":return rating >= 4;
-            case "unrated":return rating === 0;
+            case "Cold":return category === "Cold";
+            case "Warm":return category === "Warm";
+            case "Hot":return category === "Hot";
+            case "unrated":return category === null;
             default:return true;
           }
         })();
@@ -974,17 +971,13 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                   </SelectContent>
                 </Select>
                 <Select value={ratingFilter} onValueChange={(v) => setRatingFilter(v === "ALL" ? undefined : v)}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Rating" /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Category" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Ratings</SelectItem>
-                    <SelectItem value="unrated">Unrated (0)</SelectItem>
-                    <SelectItem value="1">⭐ 1 Star</SelectItem>
-                    <SelectItem value="2">⭐⭐ 2 Stars</SelectItem>
-                    <SelectItem value="3">⭐⭐⭐ 3 Stars</SelectItem>
-                    <SelectItem value="4">⭐⭐⭐⭐ 4 Stars</SelectItem>
-                    <SelectItem value="5">⭐⭐⭐⭐⭐ 5 Stars</SelectItem>
-                    <SelectItem value="3+">⭐⭐⭐+ 3+ Stars</SelectItem>
-                    <SelectItem value="4+">⭐⭐⭐⭐+ 4+ Stars</SelectItem>
+                    <SelectItem value="ALL">All Categories</SelectItem>
+                    <SelectItem value="Cold">Cold</SelectItem>
+                    <SelectItem value="Warm">Warm</SelectItem>
+                    <SelectItem value="Hot">Hot</SelectItem>
+                    <SelectItem value="unrated">Uncategorized</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex items-center gap-1">
@@ -1083,7 +1076,7 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                      </div>
                    </TableHead>
-                   <TableHead className="hidden lg:table-cell">Rating</TableHead>
+                   <TableHead className="hidden lg:table-cell">Category</TableHead>
                    <TableHead className="hidden lg:table-cell">Feedback</TableHead>
                    <TableHead className="text-right">Actions</TableHead>
                  </TableRow>
@@ -1138,9 +1131,9 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                               title="Show details">
 
                                     <ChevronDown className={`h-4 w-4 transition-transform ${expandedRows[l.id] ? 'rotate-180' : ''}`} />
-                                    {l.rating && l.rating > 0 &&
-                              <span className="text-xs font-bold text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded-full border border-yellow-200">
-                                        {l.rating}
+                                    {ratingToCategory(l.rating) &&
+                              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full border ${categoryBadgeClasses(ratingToCategory(l.rating))}`}>
+                                        {ratingToCategory(l.rating)}
                                       </span>
                               }
                                   </button>
@@ -1178,9 +1171,9 @@ function ContactsSection({ activeFeedbacks, selectedLeadId }: {activeFeedbacks: 
                           </div>
                         </TableCell>
                        <TableCell className="hidden lg:table-cell">
-                         <StarRating
+                         <LeadCategorySelect
                         rating={l.rating || 0}
-                        onRatingChange={(rating) => handleRatingChange(l.id, rating)}
+                        onCategoryChange={(rating) => handleRatingChange(l.id, rating)}
                         size="sm" />
 
                        </TableCell>

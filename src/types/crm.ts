@@ -12,7 +12,7 @@ export interface Lead {
   status: LeadStatus;
   notes: string;
   feedback: Feedback;
-  rating?: number; // 0-5 star rating
+  rating?: number; // stored 0-5; mapped to category: 1=Cold, 2-3=Warm, 4-5=Hot (see ratingUtils)
   leadDate?: string; // ISO date string, optional
   createdAt: string; // ISO
   updatedAt: string; // ISO

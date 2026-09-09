@@ -138,7 +138,7 @@ var update_lead_default = defineTool3({
     id: z3.string().uuid().describe("The lead id to update."),
     status: z3.string().optional().describe("New status, e.g. 'Prospect', 'Hot Lead', 'Closed', 'Lost'."),
     feedback: z3.string().optional().describe("Feedback value, e.g. 'Prospect', 'Follow-up', 'Visited', 'Rejected'."),
-    rating: z3.number().int().min(0).max(5).optional().describe("Star rating 0-5."),
+    rating: z3.number().int().min(0).max(5).optional().describe("Lead category stored as a number: 1 = Cold, 3 = Warm, 5 = Hot, 0 = uncategorized."),
     notes: z3.string().optional().describe("Replaces the notes field for this lead.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },

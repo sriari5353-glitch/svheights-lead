@@ -10,7 +10,7 @@ export default defineTool({
     id: z.string().uuid().describe("The lead id to update."),
     status: z.string().optional().describe("New status, e.g. 'Prospect', 'Hot Lead', 'Closed', 'Lost'."),
     feedback: z.string().optional().describe("Feedback value, e.g. 'Prospect', 'Follow-up', 'Visited', 'Rejected'."),
-    rating: z.number().int().min(0).max(5).optional().describe("Star rating 0-5."),
+    rating: z.number().int().min(0).max(5).optional().describe("Lead category stored as a number: 1 = Cold, 3 = Warm, 5 = Hot, 0 = uncategorized."),
     notes: z.string().optional().describe("Replaces the notes field for this lead."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },

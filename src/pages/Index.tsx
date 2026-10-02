@@ -36,7 +36,7 @@ const FEEDBACK_OPTIONS: Feedback[] = ["Prospect", "Follow-up", "Visited", "Rejec
 
 function useSEO() {
   useEffect(() => {
-    document.title = "SV Heights LeadMate CRM | Real Estate Leads";
+    document.title = "anyacrm.site";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", "Simple, clean CRM to track real estate leads, reminders, and WhatsApp campaigns for SV Heights.");
 
@@ -46,7 +46,7 @@ function useSEO() {
     script.text = JSON.stringify({
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      name: "SV Heights LeadMate",
+      name: "anyacrm.site",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       description: "Lead tracking CRM for real estate with reminders and WhatsApp bulk messaging."

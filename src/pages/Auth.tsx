@@ -46,7 +46,7 @@ const AuthPage: React.FC = () => {
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
-    setSEO("Sign In | anyacrm.site", "Sign in with your username and password to access LeadMate CRM.");
+    setSEO("anyacrm.site", "Sign in with your username and password to access anyacrm.site CRM.");
     // Only fetch all users if current user is admin
     if (isAdmin) {
       fetchUsers();
@@ -176,7 +176,7 @@ const AuthPage: React.FC = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
           <CardTitle className="text-center">
-            {user ? "Switch User" : "Sign in"}
+            {user ? "Switch User" : "anyacrm.site"}
           </CardTitle>
           {user && (
             <div className="text-center text-sm text-muted-foreground">

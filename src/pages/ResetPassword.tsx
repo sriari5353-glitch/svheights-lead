@@ -13,7 +13,7 @@ const ResetPassword: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "Set New Password | LeadMate CRM";
+    document.title = "Set New Password | anyacrm.site";
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setCanReset(true);

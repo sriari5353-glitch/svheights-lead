@@ -46,7 +46,7 @@ const AuthPage: React.FC = () => {
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
-    setSEO("Sign In | LeadMate CRM", "Sign in with your username and password to access LeadMate CRM.");
+    setSEO("Sign In | anyacrm.site", "Sign in with your username and password to access LeadMate CRM.");
     // Only fetch all users if current user is admin
     if (isAdmin) {
       fetchUsers();

@@ -11,7 +11,7 @@ const ForgotPassword: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "Forgot Password | LeadMate CRM";
+    document.title = "Forgot Password | anyacrm.site";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", "Reset your LeadMate CRM password via email.");
   }, []);

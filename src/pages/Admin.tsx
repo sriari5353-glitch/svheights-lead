@@ -44,7 +44,7 @@ const AdminPage: React.FC = () => {
   const [editEmailValue, setEditEmailValue] = useState("");
 
   useEffect(() => {
-    document.title = "Admin | LeadMate";
+    document.title = "Admin | anyacrm.site";
   }, []);
 
   const loadUsers = async () => {

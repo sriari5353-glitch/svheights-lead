@@ -38,7 +38,7 @@ function useSEO() {
   useEffect(() => {
     document.title = "anyacrm.site";
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", "Simple, clean CRM to track real estate leads, reminders, and WhatsApp campaigns for SV Heights.");
+    if (meta) meta.setAttribute("content", "Simple, clean CRM to track real estate leads, reminders, and WhatsApp campaigns for anyacrm.site.");
 
     // JSON-LD
     const script = document.createElement("script");
